@@ -1,0 +1,71 @@
+name: ml-env
+channels:
+  - pytorch          # torch, torchvision — сначала
+  - nvidia           # cuda-toolkit, cudnn wheels
+  - conda-forge      # приоритет перед defaults для большинства пакетов
+  - defaults
+
+dependencies:
+  # ── Интерпретатор ──────────────────────────────────────────────
+  - python=3.11.7
+
+  # ── Научный стек ───────────────────────────────────────────────
+  - numpy=1.26.4
+  - pandas=2.2.1
+  - scipy=1.12.0
+  - scikit-learn=1.4.1.post1
+  - statsmodels=0.14.1
+
+  # ── PyTorch (CUDA 11.8) ─────────────────────────────────────────
+  - pytorch=2.2.1=py3.11_cuda11.8_cudnn8.7.0_0
+  - torchvision=0.17.1
+  - torchaudio=2.2.1
+  - pytorch-cuda=11.8
+
+  # ── Трансформеры / NLP ──────────────────────────────────────────
+  - pip  # huggingface wheels ставим через pip
+
+  # ── Визуализация ────────────────────────────────────────────────
+  - matplotlib=3.8.3
+  - seaborn=0.13.2
+  - plotly=5.20.0
+
+  # ── Jupyter ─────────────────────────────────────────────────────
+  - jupyterlab=4.1.5
+  - ipywidgets=8.1.2
+  - ipykernel=6.29.3
+  - nbformat=5.9.2
+  - nbconvert=7.16.2
+
+  # ── Утилиты разработки ──────────────────────────────────────────
+  - python-dotenv=1.0.1
+  - pyyaml=6.0.1
+  - tqdm=4.66.2
+  - rich=13.7.1
+  - loguru=0.7.2
+
+  # ── Работа с данными ────────────────────────────────────────────
+  - pyarrow=15.0.0
+  - sqlalchemy=2.0.28
+  - requests=2.31.0
+
+  # ── Качество кода ───────────────────────────────────────────────
+  - ruff=0.3.3
+  - pre-commit=3.6.2
+
+  # ── pip-зависимости (нет в conda) ───────────────────────────────
+  - pip:
+    # Hugging Face
+    - transformers==4.39.3
+    - datasets==2.18.0
+    - accelerate==0.28.0
+    - tokenizers==0.15.2
+    - evaluate==0.4.1
+    - huggingface-hub==0.22.2
+    # Reddit API
+    - praw==7.7.1
+    # Дополнительно
+    - sentence-transformers==2.6.1
+    - langdetect==1.0.9
+    - emoji==2.10.1
+    - ftfy==6.1.3

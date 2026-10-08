@@ -1,0 +1,60 @@
+# ============================================================
+#  Docker Compose — ML/NLP среда с JupyterLab + CUDA
+#  Запуск: docker compose up  (одна команда)
+# ============================================================
+version: "3.9"
+
+services:
+  jupyter:
+    # -- Образ --------------------------------------------------
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: ml-env:cuda11.8-py311
+
+    # -- Имя контейнера ----------------------------------------
+    container_name: ml-jupyter
+
+    # -- GPU ----------------------------------------------------
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+
+    # -- Порты --------------------------------------------------
+    ports:
+      - "8888:8888"      # JupyterLab
+
+    # -- Монтирование томов -------------------------------------
+    volumes:
+      # Код и ноутбуки — живое редактирование без rebuild
+      - .:/workspace
+      # Кэш Hugging Face — не скачивать модели повторно
+      - hf_cache:/root/.cache/huggingface
+      # Кэш pip/conda
+      - pip_cache:/root/.cache/pip
+
+    # -- Переменные среды из .env файла -------------------------
+    env_file:
+      - .env
+
+    # -- Рестарт -------------------------------------------------
+    restart: unless-stopped
+
+    # -- Healthcheck --------------------------------------------
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8888/api"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+# -- Именованные тома ------------------------------------------
+volumes:
+  hf_cache:
+    driver: local
+  pip_cache:
+    driver: local
