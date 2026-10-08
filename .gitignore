@@ -1,0 +1,73 @@
+# ---- Secrets (Reddit API, tokens) ----
+.env
+.env.*
+praw.ini
+secrets/
+*.pem
+*.key
+credentials*.json
+
+# ---- Data: raw and interim never go to git ----
+data/raw/*
+data/interim/*
+!data/raw/.gitkeep
+!data/interim/.gitkeep
+*.sqlite
+*.db
+*.parquet
+*.feather
+*.zip
+*.tar.gz
+
+# ---- Large files / model weights ----
+*.pt
+*.pth
+*.ckpt
+*.h5
+*.onnx
+*.bin
+*.safetensors
+
+# ---- Python ----
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+build/
+dist/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# ---- Virtual environments ----
+.venv/
+venv/
+env/
+.conda/
+
+# ---- Jupyter ----
+.ipynb_checkpoints/
+*/.ipynb_checkpoints/*
+.virtual_documents/
+
+# ---- Logs and temp ----
+*.log
+logs/
+tmp/
+*.tmp
+*.swp
+
+# ---- OS ----
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ---- VS Code (keep shared settings only) ----
+.vscode/*
+!.vscode/settings.json
+!.vscode/extensions.json
+
+# ---- Results that are regenerated ----
+results/**/*.tmp 
