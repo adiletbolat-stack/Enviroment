@@ -1,0 +1,17 @@
+cff-version: 1.2.0
+message: "If you use this repository, please cite it as below."
+title: "Psychological Markers of Isolation and Attachment among Students in Long-Term Interaction with AI Companions: A Content Analysis"
+type: software
+authors:
+  - family-names: "Merkulova"
+    given-names: "Anna"
+  - family-names: "Bolat"
+    given-names: "Adilet"
+version: "1.0.0"
+date-released: "2026-10-15"
+license: MIT
+repository-code: "https://github.com/adiletbolat-stack/Enviroment"
+keywords:
+  - AI companions
+  - content analysis
+  - reproducible research

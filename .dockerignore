@@ -1,0 +1,17 @@
+# Keep the build context small and free of data and secrets
+.git
+.gitignore
+.env
+.env.*
+praw.ini
+secrets/
+data/raw/
+data/interim/
+results/
+logs/
+**/__pycache__/
+**/.ipynb_checkpoints/
+.venv/
+venv/
+.vscode/
+*.log

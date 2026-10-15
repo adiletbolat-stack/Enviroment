@@ -1,0 +1,12 @@
+# All study parameters in one place (referenced by README and scripts)
+seed: 42
+alpha: 0.05
+min_words: 100
+duration_groups: ["<1m", "1-3m", ">3m"]
+primary_contrast: ["<1m", ">3m"]
+normalisation: per_1000_words
+unit_of_analysis: author
+collection:
+  period: "TODO: YYYY-MM-DD to YYYY-MM-DD"
+  extraction_date: "TODO"
+  communities: []        # fill in

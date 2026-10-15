@@ -1,0 +1,6 @@
+# Keep Unix line endings for files that run inside the Linux container (Windows would turn them into CRLF)
+*.sh        text eol=lf
+Dockerfile  text eol=lf
+*.py        text eol=lf
+*.yml       text eol=lf
+*.yaml      text eol=lf
