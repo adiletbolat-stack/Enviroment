@@ -106,28 +106,6 @@ bash scripts/run_all.sh
 
 **Randomness.** The random seed (default `42`) and all analysis parameters are set in `configs/study.yaml` and used by every script, including the bootstrap and the random subsample for the second coder.
 
-**Benchmark-log quality check.** Validate a benchmark JSONL, calculate the measured-run error rate against a 1% guardrail, and add IQR outlier flags without removing any rows:
-
-```bash
-python src/clean_benchmark.py \
-  --input data/raw/test_run_8364c978.jsonl \
-  --output data/interim/test_run_8364c978_cleaned.csv \
-  --report data/interim/test_run_8364c978_quality.json
-```
-
-Warm-up rows and failed measurements are retained and separately labeled. Outlier flags identify unusual successful measurement latencies; they do not establish that a value is hardware noise.
-
-Create a latency ECDF with p50/p95/p99 markers and a run-order plot that highlights, but retains, IQR-flagged values and failures:
-
-```bash
-python src/plot_benchmark.py \
-  --input data/interim/test_run_8364c978_cleaned.csv \
-  --report data/interim/test_run_8364c978_quality.json \
-  --out-dir results/figures
-```
-
-The script writes 300-DPI PNG and vector PDF versions of both figures and refuses to overwrite existing outputs.
-
 **Re-collecting the data (optional).** Put your Reddit API credentials in a local `.env` file (never committed), then run `notebooks/01_collection_log.ipynb`. It reads `data/ids/post_ids.csv` and downloads the same posts. Deleted posts cannot be recovered; their number is logged.
 
 ---
