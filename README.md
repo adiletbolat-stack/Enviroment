@@ -154,3 +154,73 @@ If you use this work, please cite:
 **Licenses.**
 - Source code (`src/`, `scripts/`, `notebooks/`, `tests/`): [MIT License](LICENSE).
 - Codebook and coded data (`codebook/`, `data/coded/`, `results/`): [CC BY 4.0](LICENSE-DATA).
+
+## Results & Discussion
+
+### Benchmark of the analysis step (one implementation)
+
+120 measured calls after warm-up (80 warm-up calls excluded), 0 errors (error rate 0.0 %). Bootstrap: 2000 resamples, seed 42, percentile method.
+
+| Metric | Value | 95% bootstrap CI |
+|---|---|---|
+| Mean ± SD | 3.388 ± 0.943 ms | mean: 3.236 – 3.562 ms |
+| Median (p25–p75) | 3.185 ms (2.633 – 3.912 ms) | median: 2.938 – 3.330 ms |
+| p95 | 4.789 ms | 4.589 – 5.698 ms |
+| p99 | 5.847 ms | 4.929 – 8.753 ms |
+| Error rate | 0.0 % (0 of 120) | – |
+
+Two observations above the upper 1.5×IQR fence (5.829 ms) are **flagged, not removed**. Their cause was not investigated, so they are not called hardware errors.
+
+![Distribution of individual latency measurements](reports/figures/fig2_distribution_boxplot.png)
+
+*Figure 2. Individual latency measurements of the current implementation (n = 120). Box: median and quartiles, whiskers: 1.5×IQR, X: observations flagged by the IQR rule.*
+
+### Latency under load
+
+Figure 1 comes from a **separate load test** (`src/load_test.py`): the analysis step runs as a local HTTP service; requests are sent on a fixed schedule at several rates (open loop), latency is measured from the intended send time, a warm-up is discarded and errors are kept in the data. Client and server run on the same machine and the service works on a synthetic coded table, so the curve is **relative**, not an absolute capacity of the system. The original benchmark log contains a single load level and no RPS values, therefore it cannot be used for this figure.
+
+![Latency percentiles vs load](reports/figures/fig1_latency_vs_load.png)
+
+*Figure 1. Latency percentiles (p50, p95, p99) vs request rate; shaded areas: 95% bootstrap CI; logarithmic y axis.*
+
+requests	errors	error rate, %	p50, ms	p95, ms	p99, ms
+rps						
+10.0	150	0	0.00	4.39	19.34	35.17
+20.0	300	0	0.00	4.43	20.24	24.28
+30.0	450	0	0.00	4.63	15.33	36.86
+40.0	600	0	0.00	5.54	10.50	56.80
+50.0	750	0	0.00	177.82	306.86	356.69
+75.0	1125	0	0.00	184.93	441.52	706.94
+100.0	1500	0	0.00	213.41	747.20	1180.24
+150.0	2250	2	0.09	728.94	1512.02	2169.07
+
+
+At low request rates the service keeps up and latency stays close to the processing time. Once the rate exceeds the capacity of the service, a queue builds up during the fixed duration of each level, the percentiles rise steeply, and the values at those levels depend on how long the level lasted: they are **not** steady-state latencies. The tail (p95, p99) is clearly above the median even at low rates; the reason was not investigated.
+
+### Baseline vs Proposed Method
+
+**No comparison was performed.** Only one implementation was measured, so this README contains no comparative table and makes no claim of improvement over a baseline.
+
+### Limitations
+
+- One variant of the system, no baseline.
+- The bootstrap intervals treat measurements as independent. Consecutive runs can be correlated, so the intervals may understate the uncertainty (the notebook reports the lag-1 autocorrelation).
+- Results depend on the hardware and the background load of the machine that produced the logs.
+- The load test uses one machine for client and server and a synthetic table.
+- Outliers are flagged by a statistical rule only.
+
+### Domain model (Information Security)
+
+The threat model of the research data pipeline is a STRIDE matrix with 15 threats, risk scores and mitigations: [`docs/domain_model.md`](docs/domain_model.md). The highest residual risk is the re-identification of the authors of the analysed posts.
+
+### Reproduce the analysis (Windows, virtual environment)
+
+```powershell
+py -m venv .venv
+.\.venv\Scripts\python.exe -m pip install pandas numpy scipy matplotlib seaborn ipykernel
+.\.venv\Scripts\python.exe src\make_figures.py --only 2
+.\.venv\Scripts\python.exe src\load_test.py
+.\.venv\Scripts\python.exe src\make_figures.py --measurements data\processed\measurements_load.csv --only 1
+```
+
+Then open `notebooks/01_data_analysis.ipynb`, select the `.venv` kernel and run all cells (random seed fixed to 42). The Docker setup described above is the intended way to pin the environment; the image has not been built and verified yet.

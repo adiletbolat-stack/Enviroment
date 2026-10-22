@@ -114,7 +114,8 @@ def collect(seed=None, config=None, lock_file="requirements.lock.txt"):
         "cpu": cpu_info(),
         "ram": memory_info(),
         "python": {"version": platform.python_version(), "implementation": platform.python_implementation(),
-                   "compiler": platform.python_compiler(), "executable": sys.executable,
+                   "compiler": platform.python_compiler(), "executable": os.path.basename(sys.executable),   # file name only: the full path contains the user name
+                   
                    "hashseed": os.environ.get("PYTHONHASHSEED")},
         "packages": package_versions(),
         "lock_file_sha256": file_sha256(lock_file),

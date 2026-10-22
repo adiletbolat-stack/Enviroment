@@ -1,0 +1,67 @@
+{
+  "collected_utc": "2026-10-22T18:46:52Z",
+  "os": {
+    "system": "Windows",
+    "release": "10",
+    "version": "10.0.19045",
+    "platform": "Windows-10-10.0.19045-SP0",
+    "timezone": "\u041a\u044b\u0437\u044b\u043b\u043e\u0440\u0434\u0430 (\u0437\u0438\u043c\u0430)",
+    "locale": "Russian_Russia"
+  },
+  "cpu": {
+    "machine": "AMD64",
+    "logical_cores": 8,
+    "model": "Intel(R) Core(TM) i5-10300H CPU @ 2.50GHz",
+    "physical_cores": null,
+    "freq_mhz_max": null,
+    "freq_mhz_current": null,
+    "governor": null
+  },
+  "ram": {
+    "total_gb": null,
+    "available_gb": null
+  },
+  "python": {
+    "version": "3.13.0",
+    "implementation": "CPython",
+    "compiler": "MSC v.1941 64 bit (AMD64)",
+    "executable": "python.exe",
+    "hashseed": null
+  },
+  "packages": {
+    "numpy": "2.5.4",
+    "pandas": "3.0.6",
+    "scipy": "1.18.1",
+    "statsmodels": null,
+    "scikit-learn": null,
+    "matplotlib": "3.11.2",
+    "praw": null
+  },
+  "lock_file_sha256": null,
+  "container": {
+    "in_container": false,
+    "cgroup_cpu_max": null,
+    "cgroup_memory_max": null,
+    "cpus_allowed": null
+  },
+  "git": {
+    "commit": "ce9b855a2db528780547812f0626fc51c217acd7",
+    "dirty": true,
+    "branch": "main"
+  },
+  "power": {
+    "load_avg": null
+  },
+  "seed": 42,
+  "config": {
+    "levels": "10,20,30,40,50,75,100,150",
+    "duration": 15.0,
+    "warmup_requests": 100,
+    "workers": 64,
+    "timeout": 10.0,
+    "seed": 42,
+    "experiment": "load_test",
+    "out": "data/processed/measurements_load.csv"
+  },
+  "run_id": "278e3399"
+}
