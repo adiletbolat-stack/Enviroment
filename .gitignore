@@ -9,6 +9,8 @@ credentials*.json
 
 # ---- Data: raw and interim never go to git ----
 data/raw/*
+!data/raw/important_data.csv
+!data/raw/main_dataset.csv
 data/interim/*
 !data/raw/.gitkeep
 !data/interim/.gitkeep
