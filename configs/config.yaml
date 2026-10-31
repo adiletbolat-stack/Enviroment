@@ -6,7 +6,7 @@
 
 # ── Параметры прогона ─────────────────────────────────────────
 benchmark:
-  n_runs: 1000           # рабочих измерений после warm-up
+  n_runs: 120            # рабочих измерений после warm-up (≥100 по регламенту)
   seed: 42               # фиксация случайности (numpy + random + PYTHONHASHSEED)
   experiment: rq2_pipeline
   out_dir: data/sample   # Tracked directory for benchmark logs

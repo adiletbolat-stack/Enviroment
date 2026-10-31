@@ -24,6 +24,6 @@ echo "=== [3/4] Running hypothesis tests (RQ2 & RQ3) ==="
 python src/stats.py --config configs/study.yaml --input data/interim/analysis_set.csv
 
 echo "=== [4/4] Running benchmark verification ==="
-python src/benchmark.py --config configs/config.yaml --n-runs 120 --out-dir data/sample
+python src/benchmark.py --config configs/config.yaml --n-runs 120 --out-file data/sample/test_run.jsonl
 
 echo "=== Pipeline completed successfully! ==="

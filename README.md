@@ -157,9 +157,9 @@ The dataset provided in `data/synthetic/main_dataset.csv` (and excerpted in `dat
 
 As a separate engineering objective distinct from the behavioral study, this repository implements a production-grade benchmarking harness ([`src/benchmark.py`](src/benchmark.py) and [`src/bench_rq2.py`](src/bench_rq2.py)) to audit the latency, jitter, and computational complexity of the RQ2 analysis step.
 
-- **Warm-up phase:** Adaptive warm-up discarding cold-start iterations until coefficient of variation (CV) and window drift stabilize.
+- **Warm-up phase:** Adaptive warm-up discarding cold-start iterations until coefficient of variation (CV) and window drift stabilize (`warmup_converged=True`, 50 iterations).
 - **I/O Isolation:** Zero logging, zero print statements, and disabled garbage collection (`gc.disable()`) during the measured timing loop.
-- **Output:** Structured JSONL logging with microsecond UTC timestamps (`%Y-%m-%dT%H:%M:%S.%fZ`), monotonic offset, error isolation, and p50/p95/p99 latency calculations. A sample log of 202 lines (120 measured calls) is tracked in [`data/sample/test_run.jsonl`](data/sample/test_run.jsonl).
+- **Output:** Structured JSONL logging with microsecond UTC timestamps (`%Y-%m-%dT%H:%M:%S.%fZ`), monotonic offset, error isolation, and p50/p95/p99 latency calculations. A verified log of 172 lines (50 warm-up + 120 measured calls, 0 errors, median 2.68 ms, p95 3.76 ms, p99 4.30 ms) is tracked in [`data/sample/test_run.jsonl`](data/sample/test_run.jsonl).
 
 ---
 

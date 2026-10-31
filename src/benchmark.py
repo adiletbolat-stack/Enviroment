@@ -349,6 +349,7 @@ def main() -> None:
     ap.add_argument("--seed",       type=int,         default=None)
     ap.add_argument("--experiment", default=None)
     ap.add_argument("--out-dir",    default=None)
+    ap.add_argument("--out-file",   default=None,     help="явный путь к выходному файлу (заменяет out-dir и имя с run_id)")
     ap.add_argument("--slo-ms",     type=float,       default=None,
                     help="SLO-порог в мс; ошибки считаются нарушением")
     a = ap.parse_args()
@@ -415,7 +416,12 @@ def main() -> None:
 
     # ── Статистика и I/O ─────────────────────────────────────────
     summary = summarize(rows, a.slo_ms)
-    path = os.path.join(a.out_dir, f"{a.experiment}_{run_id}.jsonl")
+    if a.out_file:
+        path = a.out_file
+        if os.path.exists(path):
+            os.remove(path)
+    else:
+        path = os.path.join(a.out_dir, f"{a.experiment}_{run_id}.jsonl")
     write_log(path, meta, rows, summary)
 
     print(f"log      : {path}")
