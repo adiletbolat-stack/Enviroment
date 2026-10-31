@@ -7,12 +7,12 @@ secrets/
 *.key
 credentials*.json
 
-# ---- Data: raw and interim never go to git ----
+# ---- Data: raw, synthetic and interim never go to git ----
 data/raw/*
-!data/raw/important_data.csv
-!data/raw/main_dataset.csv
+data/synthetic/*
 data/interim/*
 !data/raw/.gitkeep
+!data/synthetic/.gitkeep
 !data/interim/.gitkeep
 *.sqlite
 *.db
@@ -45,6 +45,8 @@ htmlcov/
 
 # ---- Virtual environments ----
 .venv/
+.venv*/
+.venv-task7/
 venv/
 env/
 .conda/
@@ -61,10 +63,11 @@ tmp/
 *.tmp
 *.swp
 
-# ---- OS ----
+# ---- OS and vendor artifacts ----
 .DS_Store
 Thumbs.db
 desktop.ini
+Microsoft/
 
 # ---- VS Code (keep shared settings only) ----
 .vscode/*
@@ -72,4 +75,4 @@ desktop.ini
 !.vscode/extensions.json
 
 # ---- Results that are regenerated ----
-results/**/*.tmp 
+results/**/*.tmp
