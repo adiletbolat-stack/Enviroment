@@ -1,17 +1,35 @@
-# Keep the build context small and free of data and secrets
+# Keep Docker build context minimal, clean, and free of secrets
 .git
 .gitignore
+.gitattributes
 .env
 .env.*
 praw.ini
 secrets/
+*.pem
+*.key
+
+# Data directories (only data/sample/ should be in image for self-contained testing)
 data/raw/
+data/synthetic/
 data/interim/
 results/
 logs/
+reports/
+
+# Python & caches
 **/__pycache__/
+**/.pytest_cache/
 **/.ipynb_checkpoints/
+*.py[cod]
+
+# Virtual environments & local OS
 .venv/
+.venv*/
+.venv-task7/
 venv/
+env/
+Microsoft/
 .vscode/
 *.log
+tmp/
