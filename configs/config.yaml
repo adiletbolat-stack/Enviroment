@@ -9,7 +9,7 @@ benchmark:
   n_runs: 1000           # рабочих измерений после warm-up
   seed: 42               # фиксация случайности (numpy + random + PYTHONHASHSEED)
   experiment: rq2_pipeline
-  out_dir: data/raw      # JSONL-логи идут прямо в data/raw
+  out_dir: data/sample   # Tracked directory for benchmark logs
 
 # ── Warm-up ───────────────────────────────────────────────────
 warmup:

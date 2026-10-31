@@ -1,12 +1,69 @@
-# All study parameters in one place (referenced by README and scripts)
+# ============================================================
+#  study.yaml — Methodology and study parameters
+# ============================================================
 seed: 42
 alpha: 0.05
-min_words: 100
-duration_groups: ["<1m", "1-3m", ">3m"]
-primary_contrast: ["<1m", ">3m"]
-normalisation: per_1000_words
-unit_of_analysis: author
-collection:
-  period: "TODO: YYYY-MM-DD to YYYY-MM-DD"
-  extraction_date: "TODO"
-  communities: []        # fill in
+unit_of_analysis: author # ASSUMPTION: 1 row = 1 author (author_id missing in synthetic data)
+
+# ── Input configuration ─────────────────────────────────────
+input:
+  path: "data/synthetic/main_dataset.csv"
+  sample_path: "data/sample/sample.csv"
+  synthetic: true
+  strip_suffix: "_SIMULATED"
+
+# ── Column mapping (no hard-coded column names in code) ─────
+columns:
+  id: "record_id"
+  platform: "platform"
+  date: "source_date"
+  student_evidence: "student_evidence"
+  duration_months: "duration_months"
+  duration_group: "duration_group"
+  sessions_per_week: "sessions_per_week"
+  word_count: "word_count"
+  human_contact_change: "human_contact_change"
+  main_motive: "main_motive"
+
+# ── Marker definitions ──────────────────────────────────────
+markers:
+  # RQ2 Emotional dependence markers F: F_i = (sum m_ij / sum w_ij) * 1000
+  dependence:
+    - "attachment_count"
+    - "fear_of_loss_count"
+    - "daily_support_count"
+  # RQ3 Isolation-avoidance index I: I_i = (sum a_ij / sum w_ij) * 1000
+  isolation:
+    - "social_avoidance_count"
+  # Tracked counters for validation/descriptives
+  other:
+    - "comfort_count"
+    - "loneliness_count"
+    - "social_confidence_count"
+
+# ── Quality filters and outlier bounds ───────────────────────
+filters:
+  min_words: 100
+  max_words: 3000                 # flags/excludes extreme word count outlier (SYN0032: 4500)
+  min_sessions_per_week: 1        # excludes non-active users (0 sessions)
+  max_sessions_per_week: 21       # excludes extreme session outlier (SYN0008: 70)
+  excluded_student_evidence:
+    - "unknown"
+
+# ── Hypothesis test parameters ───────────────────────────────
+duration_groups:
+  novice: "<1 month"
+  intermediate: "1-3 months"
+  experienced: ">3 months"
+
+primary_contrast:
+  - "<1 month"
+  - ">3 months"
+
+# ── Output files ─────────────────────────────────────────────
+output:
+  interim_dataset: "data/interim/analysis_set.csv"
+  results_dir: "results"
+  tables_dir: "results/tables"
+  figures_dir: "results/figures"
+  synthetic_prefix: "synthetic_"
