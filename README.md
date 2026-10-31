@@ -21,7 +21,7 @@ Students increasingly interact with AI companions for emotional support. This st
 
 ### Research Design
 - **Type:** Mixed-methods observational design (qualitative content analysis via a frozen codebook + non-parametric statistical hypothesis testing).
-- **Unit of analysis:** Unique author (markers and word counts pooled per author, frequencies normalized per 1,000 words).
+- **Unit of analysis:** Unique author (markers and word counts pooled per author, frequencies normalized per 1,000 words). *[ASSUMPTION, confirm: 1 row = 1 author due to lack of author_id in synthetic data]*.
 - **Random seed:** Fixed to `42` across all scripts, bootstrap resamples, and random operations.
 
 ### Research Questions and Hypotheses
@@ -143,12 +143,12 @@ The dataset provided in `data/synthetic/main_dataset.csv` (and excerpted in `dat
 ### Data Specifications and Columns
 - **Total simulated records:** 360 rows.
 - **Marker definitions:**
-  - Emotional dependence frequency $F_i = (\sum m_{ij} / \sum w_{ij}) \times 1000$, where $m_{ij}$ includes `attachment_count`, `fear_of_loss_count`, and `daily_support_count`.
-  - Isolation–avoidance index $I_i = (\sum a_{ij} / \sum w_{ij}) \times 1000$, where $a_{ij}$ is `social_avoidance_count`.
+  - Emotional dependence frequency $F_i = (\sum m_{ij} / \sum w_{ij}) \times 1000$, where $m_{ij}$ includes `attachment_count`, `fear_of_loss_count`, and `daily_support_count`. *[ASSUMPTION, confirm: dependence composition]*.
+  - Isolation–avoidance index $I_i = (\sum a_{ij} / \sum w_{ij}) \times 1000$, where $a_{ij}$ is `social_avoidance_count`. *[ASSUMPTION, confirm: isolation index composition]*.
 - **Exclusion Filters:**
   - Minimum post length: `word_count >= 100` (removes 152 low-content rows).
-  - Outlier bounds: `word_count <= 3000` (excludes SYN0032 with 4,500 words); `1 <= sessions_per_week <= 21` (excludes non-active users and SYN0008 with 70 sessions/week).
-  - Sample relevance: `student_evidence != "unknown"` (excludes 56 non-student rows).
+  - Outlier bounds: `word_count <= 3000` (excludes SYN0032 with 4,500 words); `1 <= sessions_per_week <= 21` (excludes non-active users and SYN0008 with 70 sessions/week). *[ASSUMPTION, confirm: outlier thresholds]*.
+  - Sample relevance: `student_evidence != "unknown"` (excludes 56 non-student rows). *[ASSUMPTION, confirm: exclude unknown evidence]*.
   - Filtered sample size: 171 clean records for statistical testing.
 
 ---

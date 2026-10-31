@@ -3,7 +3,7 @@
 # ============================================================
 seed: 42
 alpha: 0.05
-unit_of_analysis: author # ASSUMPTION: 1 row = 1 author (author_id missing in synthetic data)
+unit_of_analysis: author # ASSUMPTION, confirm: 1 row = 1 author (author_id missing in synthetic data)
 
 # ── Input configuration ─────────────────────────────────────
 input:
@@ -28,11 +28,13 @@ columns:
 # ── Marker definitions ──────────────────────────────────────
 markers:
   # RQ2 Emotional dependence markers F: F_i = (sum m_ij / sum w_ij) * 1000
+  # ASSUMPTION, confirm: dependence markers composition (attachment + fear_of_loss + daily_support)
   dependence:
     - "attachment_count"
     - "fear_of_loss_count"
     - "daily_support_count"
   # RQ3 Isolation-avoidance index I: I_i = (sum a_ij / sum w_ij) * 1000
+  # ASSUMPTION, confirm: isolation marker choice (social_avoidance_count)
   isolation:
     - "social_avoidance_count"
   # Tracked counters for validation/descriptives
@@ -44,9 +46,11 @@ markers:
 # ── Quality filters and outlier bounds ───────────────────────
 filters:
   min_words: 100
+  # ASSUMPTION, confirm: outlier thresholds (max_words: 3000, sessions 1..21)
   max_words: 3000                 # flags/excludes extreme word count outlier (SYN0032: 4500)
   min_sessions_per_week: 1        # excludes non-active users (0 sessions)
   max_sessions_per_week: 21       # excludes extreme session outlier (SYN0008: 70)
+  # ASSUMPTION, confirm: exclude student_evidence=unknown from primary analysis
   excluded_student_evidence:
     - "unknown"
 
