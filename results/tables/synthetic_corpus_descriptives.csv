@@ -1,0 +1,4 @@
+# SYNTHETIC DATA -- pipeline test only
+duration_group,n_authors,total_words,median_words,mean_words,total_dependence_markers,total_isolation_markers
+1-3 months,5,844,162.0,168.8,9,3
+TOTAL,5,844,162.0,168.8,9,3

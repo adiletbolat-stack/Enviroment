@@ -1,0 +1,4 @@
+# SYNTHETIC DATA -- pipeline test only
+variable,target,spearman_rho,p_value,n,note
+duration_months,isolation_per_1000,-0.11180339887498947,0.5710276911974503,5,one-sided test (H1: rho > 0)
+sessions_per_week,isolation_per_1000,-0.05735393346764044,0.5364926202805189,5,one-sided test (H1: rho > 0)
