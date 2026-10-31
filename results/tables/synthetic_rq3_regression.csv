@@ -1,2 +1,5 @@
 # SYNTHETIC DATA -- pipeline test only
-
+term,coef,r_squared,n
+intercept,7.8968446366564855,,171
+duration_months,-0.12878251231386884,,171
+sessions_per_week,-0.6192661646333719,,171

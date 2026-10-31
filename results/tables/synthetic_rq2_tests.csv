@@ -1,2 +1,5 @@
 # SYNTHETIC DATA -- pipeline test only
-
+test,contrast,statistic,p_value,effect_size_name,effect_size,ci_95_low,ci_95_high,note
+Mann-Whitney U (experienced > novice),>3 months vs <1 month,2079.5,6.727818592721094e-05,Cliff's delta,0.44009695290858725,0.25034626038781166,0.6135907202216065,one-sided alternative
+Kruskal-Wallis H,all 3 duration groups,19.147441901996185,6.953217582626961e-05,eta_squared_H,0.1020681065595011,,,omnibus test
+Jonckheere-Terpstra Trend Test,<1 month < 1-3 months < >3 months,6206.5,6.673342162977214e-06,Z-score,4.354342589206863,,,one-sided monotonic trend
