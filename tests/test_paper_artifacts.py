@@ -194,10 +194,31 @@ class TestSection4Content:
         assert "Research Question 3" in content or "RQ3" in content, \
             "Research Question 3 / RQ3 not mentioned in paper_section_4.md"
 
-    def test_todo_b_placeholders_present(self):
+    def test_section_4_5_completed(self):
         content = _read(REPORTS / "paper_section_4.md")
-        missing = [lbl for lbl in EXPECTED_TODO_B if lbl not in content]
-        assert not missing, f"TODO(B) placeholders missing from paper_section_4.md: {missing}"
+
+        required_sections = [
+            "STRIDE Threat Analysis",
+            "Latency vs. Load",
+            "Latency Distribution",
+            "Percentile Latency and Speedup",
+            "Limitations",
+        ]
+
+        for section in required_sections:
+            assert section in content, f"Missing section: {section}"
+
+        assert "TODO(B)" not in content, (
+            "Section 4.5 still contains unfinished placeholders"
+        )
+
+        required_figures = [
+            REPORTS / "figures" / "verified" / "fig1_latency_vs_load.png",
+            REPORTS / "figures" / "verified" / "fig2_distribution_boxplot.png",
+        ]
+
+        for figure in required_figures:
+            assert figure.is_file(), f"Missing figure: {figure}"
 
     def test_mann_whitney_mentioned(self):
         content = _read(REPORTS / "paper_section_4.md")

@@ -3,7 +3,7 @@
 src/make_paper_artifacts.py — Automated typesetting and artifact generation.
 
 Generates Part A research artifacts:
-1. reports/figures/study/study_results.png and .pdf (300 DPI publication multi-panel plot)
+1. figures/study/study_results.png and .pdf (300 DPI publication multi-panel plot)
 2. reports/formulas.tex (LaTeX notation table and mathematical formulations)
 3. reports/tables.tex (LaTeX booktabs tables for Corpus, RQ2, and RQ3)
 4. reports/paper_section_4.md (Integrated English research paper Section 4 draft)
@@ -330,7 +330,7 @@ def make_tables_tex(data_dict: dict[str, Any], out_file: Path) -> None:
     rho_sess, p_sess = float(sess_corr["spearman_rho"]), float(sess_corr["p_value"])
 
     # Regression
-    b0 = float(df_rq3_reg.loc[df_rq3_reg["term"] == "intercept", "coef"].values[0])
+    b0 = float(df_rq3_reg.loc[df_rq3_reg["term"] == "const", "coef"].values[0])
     b_dur = float(df_rq3_reg.loc[df_rq3_reg["term"] == "duration_months", "coef"].values[0])
     b_sess = float(df_rq3_reg.loc[df_rq3_reg["term"] == "sessions_per_week", "coef"].values[0])
 
@@ -442,7 +442,7 @@ def make_markdown_section_4(data_dict: dict[str, Any], out_file: Path) -> None:
     dur_corr = df_rq3_corr.loc[df_rq3_corr["variable"] == "duration_months"].iloc[0]
     sess_corr = df_rq3_corr.loc[df_rq3_corr["variable"] == "sessions_per_week"].iloc[0]
 
-    b0 = float(df_rq3_reg.loc[df_rq3_reg["term"] == "intercept", "coef"].values[0])
+    b0 = float(df_rq3_reg.loc[df_rq3_reg["term"] == "const", "coef"].values[0])
     b_dur = float(df_rq3_reg.loc[df_rq3_reg["term"] == "duration_months", "coef"].values[0])
     b_sess = float(df_rq3_reg.loc[df_rq3_reg["term"] == "sessions_per_week", "coef"].values[0])
 
@@ -535,6 +535,20 @@ The following components represent security threat modeling and system benchmark
 - **Microsecond Benchmarking Latency vs Load:** `[TODO(B): Figure \\ref{{fig:benchmark}}]` — High-load open-loop latency distribution under varying RPS.
 - **Percentile Latency Formulations:** `[TODO(B): Equation \\ref{{eq:p95}}]` — Mathematical formulation of $p_{{95}}$, $p_{{99}}$, and speedup factors.
 """
+    section_path = out_file.parent / "section_4_5.md"
+
+    if section_path.is_file():
+        section_text = section_path.read_text(encoding="utf-8")
+
+        marker = "## 4.5. Methodological Placeholders"
+        position = content.find(marker)
+
+        if position == -1:
+            raise ValueError("Section 4.5 placeholder not found")
+
+        content = content[:position] + section_text.rstrip() + "\n"
+
+
     out_file.write_text(content, encoding="utf-8")
     logger.info("Saved Markdown Section 4 to %s", out_file)
 
