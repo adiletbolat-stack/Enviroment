@@ -190,3 +190,66 @@ If you use this codebase or methodology, please cite:
 
 - **Source Code** (`src/`, `scripts/`, `tests/`): [MIT License](LICENSE).
 - **Data & Documentation** (`configs/`, `data/sample/`, `docs/`): [CC BY 4.0](LICENSE-DATA).
+
+## Results & Discussion
+
+The performance evaluation was conducted using the reproducible benchmarking pipeline. Warm-up measurements were excluded from the final statistical analysis.
+
+### Benchmark Summary
+
+| Metric | Observed Result |
+|---|---:|
+| Successful requests | 120 |
+| Failed requests | 0 |
+| Error rate | 0% |
+| Mean latency | 3.388 ms |
+| Standard deviation | 0.943 ms |
+| Median latency (p50) | 3.185 ms |
+| p95 latency | 4.789 ms |
+| p99 latency | 5.847 ms |
+| Bootstrap repetitions | 2,000 |
+| Random seed | 42 |
+
+The benchmark produced a median latency of 3.185 ms, while the 95th and 99th percentile latencies were 4.789 ms and 5.847 ms, respectively.
+
+The 95% bootstrap confidence intervals were computed using the percentile method. The observations were treated as independent; therefore, temporal dependence may lead to underestimated uncertainty.
+
+A matched baseline-versus-proposed comparison was not available. Consequently, no speedup factor is reported.
+
+### Scientific Visualizations
+
+**Figure 1. Latency versus load**
+
+![Latency versus load](reports/figures/fig1_latency_vs_load.png)
+
+**Figure 2. Latency distribution**
+
+![Latency distribution](reports/figures/fig2_distribution_boxplot.png)
+
+Both figures are available in PNG and vector PDF formats in `reports/figures/`.
+
+The load-testing experiment and the 120-request distribution benchmark are separate experiments and are not combined into a single statistical sample.
+
+### Domain Model
+
+The research pipeline was analyzed using the STRIDE threat-modeling framework.
+
+The model identifies protected assets, trust boundaries, security threats, potential impacts, and proposed mitigation strategies.
+
+See [Domain Model and STRIDE Analysis](docs/domain_model.md).
+
+### Reproducibility
+
+The analysis can be reproduced using the Jupyter Notebook:
+
+`notebooks/01_data_analysis.ipynb`
+
+The notebook contains data ingestion, warm-up filtering, statistical aggregation, and visualization steps.
+
+The random seed is fixed to 42 for reproducibility.
+
+### Research Limitations
+
+The research-question analyses rely on synthetic data and serve to validate the reproducibility of the pipeline. They do not constitute empirical findings about real students or AI-companion users.
+
+The benchmark results describe the tested local environment and should not be generalized to other hardware or production systems without additional measurements.
