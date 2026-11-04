@@ -1,66 +1,54 @@
-# Domain Model: STRIDE Threat Model of the Research Data Pipeline
+# STRIDE Domain Model — Task 3 Research Pipeline
 
-**Direction:** Information Security. **Scope:** the pipeline that collects public Reddit posts about AI companions, codes them manually, analyses the coded table and publishes code, tables and figures on GitHub, including the benchmark harness (`src/benchmark.py`) that measures the analysis step.
+This design-level review covers repository components used to collect, benchmark,
+process, visualize, and publish the synthetic pipeline data. It is not a
+penetration test; mitigation status describes repository evidence, not controls
+on GitHub or the host computer.
 
-This is a design-level threat model made by the authors. Scores are team judgement, not measurements, and no penetration test was performed.
-
-## 1. Assets, components and trust boundaries
-
-| ID | Asset | Why it matters |
-|---|---|---|
-| A1 | Reddit API credentials (`.env`, `praw.ini`) | Access to the platform in the researchers' name |
-| A2 | Raw post texts (`data/raw`, `data/interim`, local only) | Personal, emotional content of identifiable people |
-| A3 | Coded table (IDs, manual codes, word counts, author IDs) | Basis of every reported result |
-| A4 | Codebook v1.0 and `codebook/CHANGELOG.md` | Defines the measured variables; must be frozen |
-| A5 | Benchmark logs (`*.jsonl`) and processed tables/figures | Evidence for the reported latency numbers |
-| A6 | GitHub repository and releases | Public record of the study |
+## Data-flow diagram
 
 ```mermaid
 flowchart LR
-  R["Reddit API"] -->|"TB1: posts, HTTP 429/5xx"| C1["C1 Collector (PRAW)"]
-  C1 --> C2[("C2 Local storage: data/raw, data/interim")]
-  C2 --> C3["C3 Manual coding, two coders"]
-  C3 --> D3[("Coded table: IDs, codes, counts")]
-  D3 --> C4["C4 Analysis pipeline: src/, Docker"]
-  C4 --> C5["C5 Benchmark harness: JSONL logs"]
-  C4 --> RES["Results: tables, figures"]
-  D3 -->|"TB2"| GH["C6 GitHub repository"]
-  RES --> GH
-  C5 --> GH
+  CFG["configs/config.yaml"] --> BENCH["src/benchmark_comparison.py"]
+  BENCH --> LOG[("data/raw/test_run.jsonl")]
+  LOAD["data/processed/measurements_load.csv + metadata"] --> PROC["src/process_data.py"]
+  LOG --> PROC
+  PROC --> AGG[("data/processed/metrics_summary.csv")]
+  PROC --> ROWS[("data/processed/measurements.csv")]
+  AGG --> VIS["src/visualize.py"]
+  ROWS --> VIS
+  VIS --> FIG["reports/figures/*.png, *.pdf"]
+  LOG --> NB["notebooks/01_data_analysis.ipynb"]
+  AGG --> NB
+  FIG --> README["README.md / Git repository"]
+  NB --> README
 ```
 
-**Trust boundaries:** TB1 internet and Reddit vs. the authors' machines; TB2 authors' machines vs. public GitHub; TB3 Docker container vs. host.
+Trust boundaries are the local machine-to-Git boundary (raw log publication),
+the input-file-to-parser boundary, and generated artifacts-to-public-repository
+boundary. The tracked benchmark log contains synthetic measurements and
+environment metadata; it must not contain credentials or human post text.
 
-## 2. STRIDE matrix
+## STRIDE matrix
 
-Score = Likelihood (1-5) x Impact (1-5). Rating: 15-25 High, 8-14 Medium, 1-7 Low.
+| Component or data flow | STRIDE category | Threat | Protected asset | Mitigation | Status |
+|---|---|---|---|---|---|
+| `.env` and `src/collect.py` -> Reddit API | Spoofing | A copied or leaked API credential is used as the researcher. | Reddit API account and collection authorization | `.env` and credential files are ignored by Git; use a least-privilege token and rotate it if exposed. | Implemented: ignore rules; credential scope and rotation are operational actions. |
+| `data/raw/test_run.jsonl` -> `src/process_data.py` | Tampering | A hand-edited, duplicated, or malformed record changes reported latency summaries. | Integrity of benchmark measurements and derived statistics | Parse JSONL record-by-record; report malformed/schema records; retain source lines and publish the canonical log with summary provenance. | Implemented: parser reports invalid lines/schema; duplicate records are flagged. Cryptographic signing is planned. |
+| `src/benchmark_comparison.py` -> JSONL metadata | Repudiation | A result cannot be tied to the measured code, seed, or machine. | Reproducibility and attribution of performance measurements | Record run ID, seed, commit/dirty state, OS, CPU, RAM, Python version, and comparison parameters in the meta record. | Implemented in the benchmark metadata collector and comparison log. |
+| `data/raw/*` -> Git repository | Information disclosure | Private raw posts or local user paths are accidentally published with the small benchmark sample. | Post authors' privacy and researcher machine details | Ignore raw data by default; allowlist only `data/raw/test_run.jsonl`; store no post text in the benchmark log and record only the interpreter executable name. | Implemented in `.gitignore`, `src/benchmark_comparison.py`, and `src/env_metadata.py`; review staged files before publication remains required. |
+| `data/processed/measurements_load.csv` -> `src/process_data.py` | Denial of service | An unexpectedly large or malformed CSV consumes excessive memory or produces incomplete aggregates. | Availability and correctness of the analysis pipeline | Validate required columns and numeric fields; use tracked, bounded benchmark inputs; add file-size/row limits if untrusted external logs are accepted. | Implemented: schema and numeric validation; hard resource limits are planned. |
+| `src/process_data.py` -> `data/processed/*.csv` | Tampering | Stale or partially written outputs are mistaken for the current run. | Summary metrics, confidence intervals, and error-rate guardrail | Regenerate summaries from the canonical JSONL and tracked load-test CSV; retain input run IDs, bootstrap seed/repetitions, and error counts. | Implemented in `src/process_data.py`; output checksums and atomic replacement are planned. |
+| `src/visualize.py` -> `reports/figures/` | Tampering | Figures are generated from stale or mismatched summary data. | Published latency plots and their uncertainty intervals | Load the generated summary and measurement tables; label units, source experiment, error guardrail, and bootstrap confidence intervals. | Implemented in `src/visualize.py`; release-time artifact review remains required. |
+| `notebooks/01_data_analysis.ipynb` -> Git repository | Information disclosure | Saved notebook output exposes absolute local paths or stale analysis. | Local environment details and reproducibility of reported results | Use repository-relative paths; execute from a clean kernel; validate cell order and saved outputs; exclude checkpoints. | Implemented in notebook checks and `.gitignore`; re-execution is required after data/code changes. |
+| Git repository and GitHub branch | Elevation of privilege | An account with excessive repository permissions modifies the published code or results. | Repository integrity and public release history | Apply least privilege, multi-factor authentication, protected branches, and reviewed changes. | Planned: repository settings are outside this checkout and were not verified. |
+| `src/benchmark_comparison.py` -> measured functions | Denial of service | A regression or repeated exceptions makes the benchmark run indefinitely or invalidates its comparison. | Availability and validity of the benchmark run | Bound warm-up and measurement counts in config; capture failures and report error rate separately; use the 1% error guardrail. | Implemented in the configured run; operational limits depend on the checked-in config. |
 
-| ID | STRIDE | Component | Threat | L | I | Score | Mitigation | Status |
-|---|---|---|---|---|---|---|---|---|
-| T1 | **S**poofing | C1 / A1 | A leaked API token is used by a third party in the researchers' name | 3 | 3 | 9 (M) | `.env`, `praw.ini` ignored by Git and Docker; revoke and re-issue if leaked; minimal API scope | `.gitignore` rules in repo; token scope to verify |
-| T2 | **S**poofing | C2 / A3 | Bots or fake accounts pretending to be students contaminate the sample | 4 | 3 | 12 (M) | Inclusion rule (explicit statement of duration), bot filtering, author-level aggregation, stated as a limitation | Rules in `docs/preregistration.md`; bot filter planned |
-| T3 | **T**ampering | C2 / A2 | Raw or interim data altered after coding, so results cannot be reproduced | 2 | 4 | 8 (M) | Store a SHA-256 checksum of each export in the log; re-collect from `post_ids.csv` | Planned |
-| T4 | **T**ampering | C3 / A4 | Codebook changed after the freeze to fit the results | 3 | 4 | 12 (M) | Frozen v1.0, `CHANGELOG.md`, pre-registration, review of every change by the second author | Files in repo; review rule to agree |
-| T5 | **T**ampering | C5 / A5 | Benchmark logs edited by hand to improve the numbers | 2 | 4 | 8 (M) | Log file created in exclusive mode (never overwritten), `run_id`, Git commit and `dirty` flag recorded in the metadata line | Implemented in `benchmark.py` |
-| T6 | **R**epudiation | C3 / A3 | Nobody can show who coded which post and when, so a dispute over Cohen's kappa cannot be settled | 3 | 3 | 9 (M) | `coder_id` and codebook version in the coded table; Git history | Planned |
-| T7 | **R**epudiation | C6 / A6 | Results changed without a trace through direct pushes to `main` | 3 | 3 | 9 (M) | Protected `main`, pull requests with review, meaningful commit messages | To enable on GitHub |
-| T8 | **I**nformation disclosure | C2, C6 / A2 | Re-identification of Reddit authors through usernames, verbatim quotes or raw texts pushed to GitHub (harm to people writing about emotional topics) | 3 | 5 | 15 (H) | `data/raw` and `data/interim` ignored; anonymous author IDs; no identifying quotes; strip notebook outputs with `nbstripout`; `docs/data_management.md` | Rules in repo; `nbstripout` to install |
-| T9 | **I**nformation disclosure | C6 / A1 | A secret committed once stays in Git history even after the file is deleted | 3 | 4 | 12 (M) | Scan history before publishing; rotate any exposed token; enable GitHub secret scanning | To do before release |
-| T10 | **I**nformation disclosure | C5 / A5 | Published logs or metadata reveal local details (user name in file paths, host name) | 3 | 2 | 6 (L) | The metadata collector records only the interpreter file name, never the full path; still review any `.meta.json` before publishing | Implemented in `env_metadata.py`; review before release |
-| T11 | **D**enial of service | C1 | Reddit rate limits (HTTP 429) or revoked access stop data collection | 4 | 3 | 12 (M) | Keep post IDs, retry with logged back-off, record excluded and deleted posts | Retry policy planned |
-| T12 | **D**enial of service | C4 | A huge or malformed post exhausts memory or crashes the pipeline | 2 | 3 | 6 (L) | Edge-case unit tests, explicit exclusion reasons, container resource limits | Tests in `tests/test_metrics.py` |
-| T13 | **E**levation of privilege | C6 | A token or collaborator with excessive GitHub rights changes the workflow or history | 2 | 4 | 8 (M) | Least privilege, two-factor authentication, protected `main` | To verify |
-| T14 | **E**levation of privilege | C4 / TB3 | Container running as root with the repository mounted | 2 | 3 | 6 (L) | Non-root user in the `Dockerfile`; no `--privileged` | Implemented in `Dockerfile` |
-| T15 | **T**ampering | C4 | Supply chain: an unpinned or compromised package changes results or runs malicious code | 2 | 4 | 8 (M) | Exact versions in `requirements.txt`, lock file after the first build, recent releases only | Pins in repo; lock file to create |
+## Scope and limitations
 
-## 3. Priorities
-
-1. **T8 (15, High):** protect the people behind the posts. This is the main residual risk of the study.
-2. **T2, T4, T9, T11 (12, Medium):** sample integrity, frozen codebook, secrets in history, rate limits.
-3. Everything marked "to verify", "planned" or "to do" must be closed or listed in `docs/limitations.md` before submission.
-
-## 4. Limits of this model
-
-- Scores are subjective and were not reviewed by an external party.
-- Only the research pipeline is modelled; Reddit's and GitHub's own security is out of scope.
-- Status values describe the repository at the time of writing and must be re-checked before the final commit.
+- The benchmark and load-test inputs are synthetic or engineering measurements,
+  not observations about people or evidence for the research hypotheses.
+- The open-loop load-test CSV was recorded on a separate machine/runtime from
+  the paired baseline/proposed comparison; the two runs are not pooled together.
+- This model describes repository controls only. GitHub access controls,
+  credential scope, host hardening, and external review were not tested here.

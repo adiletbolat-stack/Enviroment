@@ -12,6 +12,7 @@ data/raw/*
 data/synthetic/*
 data/interim/*
 !data/raw/.gitkeep
+!data/raw/test_run.jsonl
 !data/synthetic/.gitkeep
 !data/interim/.gitkeep
 *.sqlite
@@ -76,3 +77,5 @@ Microsoft/
 
 # ---- Results that are regenerated ----
 results/**/*.tmp
+results/sample/
+data/interim/sample/

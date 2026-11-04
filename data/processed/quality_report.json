@@ -1,37 +1,113 @@
 {
-  "input": "data\\raw\\test_run_8364c978.jsonl",
-  "n_lines": 202,
-  "n_parsed_objects": 202,
+  "input": "test_run.jsonl",
+  "n_lines": 402,
+  "n_parsed_objects": 402,
   "parse_issues": [],
   "n_parse_errors": 0,
-  "n_run_records_validated": 200,
-  "n_warmup": 80,
-  "n_measure_before_validation": 120,
-  "n_measure_after_warmup_filter": 120,
+  "n_run_records_validated": 400,
+  "n_warmup": 160,
+  "n_measure_before_validation": 240,
+  "n_measure_after_warmup_filter": 240,
   "phase_counts": {
-    "measure": 120,
-    "warmup": 80
+    "measure": 240,
+    "warmup": 160
   },
   "unknown_phases": [],
   "schema_issues": [],
   "n_schema_issues": 0,
   "n_missing_latency_measure": 0,
   "n_failed_measure_requests": 0,
+  "error_rate_pct": 0.0,
+  "max_error_rate_pct": 1.0,
+  "error_guardrail_passed": true,
+  "bootstrap_reps": 2000,
+  "bootstrap_seed": 42,
+  "environment": "Windows-11-10.0.26200-SP0",
+  "environment_metadata": {
+    "cpu": {
+      "machine": "AMD64",
+      "logical_cores": 8,
+      "model": "Intel(R) Core(TM) i5-9300H CPU @ 2.40GHz",
+      "physical_cores": 4,
+      "freq_mhz_max": 2400.0,
+      "freq_mhz_current": 2400.0,
+      "governor": null
+    },
+    "ram": {
+      "total_gb": 17.01,
+      "available_gb": 2.22
+    },
+    "container": {
+      "in_container": false,
+      "cgroup_cpu_max": null,
+      "cgroup_memory_max": null,
+      "cpus_allowed": null
+    },
+    "python": {
+      "version": "3.12.4",
+      "implementation": "CPython",
+      "compiler": "MSC v.1940 64 bit (AMD64)",
+      "executable": "python.exe",
+      "hashseed": null
+    }
+  },
+  "comparison": {
+    "baseline": "metrics.author_level: naive row-wise aggregation",
+    "proposed": "vectorized_author_level: pandas groupby aggregation",
+    "same_input": true,
+    "input_rows": 1848,
+    "warmup_calls_per_variant": 80,
+    "measurement_calls_per_variant": 120,
+    "pairing": "same synthetic input; execution order alternates within each pair",
+    "purpose": "engineering pipeline comparison only; not a research finding about people"
+  },
+  "load_test_source": "measurements_load.csv",
+  "load_test_environment": {
+    "os": {
+      "system": "Windows",
+      "release": "10",
+      "version": "10.0.19045",
+      "platform": "Windows-10-10.0.19045-SP0",
+      "timezone": "\u041a\u044b\u0437\u044b\u043b\u043e\u0440\u0434\u0430 (\u0437\u0438\u043c\u0430)",
+      "locale": "Russian_Russia"
+    },
+    "cpu": {
+      "machine": "AMD64",
+      "logical_cores": 8,
+      "model": "Intel(R) Core(TM) i5-10300H CPU @ 2.50GHz",
+      "physical_cores": null,
+      "freq_mhz_max": null,
+      "freq_mhz_current": null,
+      "governor": null
+    },
+    "ram": {
+      "total_gb": null,
+      "available_gb": null
+    },
+    "python": {
+      "version": "3.13.0",
+      "implementation": "CPython",
+      "compiler": "MSC v.1941 64 bit (AMD64)",
+      "executable": "python.exe",
+      "hashseed": null
+    }
+  },
+  "n_load_test_requests": 7125,
+  "n_load_test_errors": 2,
+  "load_test_error_rate_pct": 0.02807017543859649,
   "error_denominator": "all valid phase=measure run records, including records without latency",
-  "error_definition": "status != 'ok' or non-empty error_type/error_msg",
+  "error_definition": "status != 'ok' or non-empty error_type/error_msg; latency summaries use successful observations only",
   "outliers": {
     "method": "IQR",
     "multiplier": 1.5,
-    "n_reference": 120,
-    "q1_ms": 2.633375,
-    "q3_ms": 3.911625,
-    "lower_bound_ms": 0.7160000000000002,
-    "upper_bound_ms": 5.829,
-    "n_flagged": 2
+    "n_reference": 240,
+    "q1_ms": 1.995425,
+    "q3_ms": 27.357675,
+    "lower_bound_ms": -36.04795,
+    "upper_bound_ms": 65.40105,
+    "n_flagged": 0
   },
   "unsupported_metrics": [
-    "throughput: no request count/time interval field",
-    "load: not recorded",
-    "system variant: not recorded"
+    "throughput: wall-clock request rate is the offered-load variable"
   ]
 }

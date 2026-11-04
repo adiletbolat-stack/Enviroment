@@ -9,7 +9,28 @@ benchmark:
   n_runs: 120            # рабочих измерений после warm-up (≥100 по регламенту)
   seed: 42               # фиксация случайности (numpy + random + PYTHONHASHSEED)
   experiment: rq2_pipeline
-  out_dir: data/sample   # Tracked directory for benchmark logs
+  warmup_iterations: 80
+  out_dir: results/sample   # Ignored, non-destructive output for sample benchmark runs
+
+task3_load:
+  input: data/processed/measurements_load.csv
+  metadata: data/processed/measurements_load.meta.json
+  levels_rps: [10, 20, 30, 40, 50, 75, 100, 150]
+  duration_seconds: 15
+  workers: 64
+  n_authors: 400
+
+task3_comparison:
+  input: data/raw/test_run.jsonl
+  n_runs: 120
+  warmup_iterations: 80
+  seed: 42
+  n_authors: 400
+  min_words: 100
+
+statistics:
+  bootstrap_reps: 2000
+  bootstrap_seed: 42
 
 # ── Warm-up ───────────────────────────────────────────────────
 warmup:
@@ -31,6 +52,7 @@ load:
 quality:
   max_consecutive_errors: 20  # аварийный стоп при подряд идущих ошибках
   min_words: 100         # минимум слов для включения поста в анализ
+  max_error_rate_pct: 1.0  # benchmark error-rate guardrail (%)
 
 # ── SLO ───────────────────────────────────────────────────────
 slo:

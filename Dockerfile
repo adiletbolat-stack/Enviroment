@@ -8,8 +8,7 @@ ENV PYTHONHASHSEED=42 \
     PYTHONUNBUFFERED=1 \
     PIP_NO_CACHE_DIR=1 \
     PIP_DISABLE_PIP_VERSION_CHECK=1 \
-    TZ=UTC \
-    JUPYTER_TOKEN=""
+    TZ=UTC
 
 # Install minimal OS dependencies for compilation and git tooling
 RUN apt-get update \

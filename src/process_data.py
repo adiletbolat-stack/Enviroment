@@ -19,8 +19,10 @@ import numpy as np
 import pandas as pd
 
 ROOT = Path(__file__).resolve().parents[1]
-DEFAULT_INPUT = ROOT / "data/raw/test_run_8364c978.jsonl"
+DEFAULT_INPUT = ROOT / "data/raw/test_run.jsonl"
 DEFAULT_OUTPUT = ROOT / "data/processed"
+DEFAULT_LOAD_INPUT = ROOT / "data/processed/measurements_load.csv"
+DEFAULT_LOAD_SUMMARY = DEFAULT_OUTPUT / "load_test_summary.csv"
 REQUIRED_RUN_FIELDS = {"type", "phase", "idx", "status"}
 BOOTSTRAP_REPS = 2_000
 RANDOM_SEED = 42
@@ -77,7 +79,8 @@ def validate_records(records: list[dict[str, Any]]) -> tuple[pd.DataFrame, list[
     frame = pd.DataFrame(run_rows)
     if frame.empty:
         raise ValueError("No valid run records found; expected type=run JSON objects.")
-    duplicate_mask = frame.duplicated(["phase", "idx"], keep=False)
+    duplicate_columns = ["phase", "idx"] + (["variant"] if "variant" in frame else [])
+    duplicate_mask = frame.duplicated(duplicate_columns, keep=False)
     for _, row in frame.loc[duplicate_mask].iterrows():
         issues.append({"line": int(row["_source_line"]), "reason": "duplicate_phase_idx"})
     return frame, issues
@@ -99,10 +102,11 @@ def flag_latency_outliers(measurements: pd.DataFrame) -> tuple[pd.DataFrame, dic
                    "upper_bound_ms": upper, "n_flagged": int(frame["is_iqr_outlier"].sum())}
 
 
-def _bootstrap_interval(values: np.ndarray, rng: np.random.Generator, statistic: str) -> tuple[float, float] | None:
-    if len(values) < 2:
+def _bootstrap_interval(values: np.ndarray, rng: np.random.Generator, statistic: str,
+                        repetitions: int = BOOTSTRAP_REPS) -> tuple[float, float] | None:
+    if len(values) < 2 or repetitions < 1:
         return None
-    draws = rng.choice(values, size=(BOOTSTRAP_REPS, len(values)), replace=True)
+    draws = rng.choice(values, size=(repetitions, len(values)), replace=True)
     if statistic == "mean":
         estimates = draws.mean(axis=1)
     else:
@@ -112,42 +116,131 @@ def _bootstrap_interval(values: np.ndarray, rng: np.random.Generator, statistic:
     return float(low), float(high)
 
 
-def aggregate(measurements: pd.DataFrame) -> pd.DataFrame:
-    """Summarize measured latency and request-level error rate by run id."""
-    successes = measurements[measurements["status"].eq("ok")].copy()
+def aggregate(measurements: pd.DataFrame, bootstrap_reps: int = BOOTSTRAP_REPS,
+              seed: int = RANDOM_SEED) -> pd.DataFrame:
+    """Summarize measured latency by implementation and offered load."""
+    if bootstrap_reps < 1:
+        raise ValueError("bootstrap_reps must be positive")
+    data = measurements.copy()
+    if "variant" not in data:
+        data["variant"] = "current"
+    if "rps" not in data:
+        data["rps"] = np.nan
     rows: list[dict[str, Any]] = []
-    for run_id, group in measurements.groupby("run_id", dropna=False, sort=True):
+
+    def append_group(variant: Any, rps: Any, group: pd.DataFrame, pooled: bool = False) -> None:
         successful = group.loc[group["status"].eq("ok") & group["latency_ms"].notna(), "latency_ms"].astype(float)
         values = successful.to_numpy()
-        rng = np.random.default_rng(RANDOM_SEED)
-        ci = {key: _bootstrap_interval(values, rng, key) for key in ("mean", "p50", "p95", "p99")}
+        rng = np.random.default_rng(seed)
+        ci = {key: _bootstrap_interval(values, rng, key, bootstrap_reps)
+              for key in ("mean", "p50", "p95", "p99")}
         errors = ~group["status"].eq("ok")
-        if "error_type" in group:
-            errors |= group["error_type"].notna() & group["error_type"].astype(str).ne("")
-        if "error_msg" in group:
-            errors |= group["error_msg"].notna() & group["error_msg"].astype(str).ne("")
+        for field in ("error_type", "error_msg"):
+            if field in group:
+                errors |= group[field].notna() & group[field].astype(str).ne("")
         row: dict[str, Any] = {
-            "run_id": run_id, "phase": "measure", "n_requests": int(len(group)),
-            "n_success": int((~errors).sum()), "n_errors": int(errors.sum()),
-            "error_rate_pct": float(errors.mean() * 100) if len(group) else np.nan,
+            "run_id": str(group["run_id"].iloc[0]) if "run_id" in group and len(group) else "",
+            "variant": variant, "rps": "pooled" if pooled else rps, "phase": "measure",
+            "n_requests": int(len(group)), "n_success": int((~errors).sum()),
+            "n_errors": int(errors.sum()), "error_rate_pct": float(errors.mean() * 100) if len(group) else np.nan,
             "n_latency_observations": int(len(values)),
             "latency_mean_ms": float(successful.mean()) if len(values) else np.nan,
             "latency_sd_ms": float(successful.std(ddof=1)) if len(values) > 1 else np.nan,
-            "latency_p50_ms": float(successful.quantile(0.50)) if len(values) else np.nan,
-            "latency_p95_ms": float(successful.quantile(0.95)) if len(values) else np.nan,
-            "latency_p99_ms": float(successful.quantile(0.99)) if len(values) else np.nan,
-            "bootstrap_reps": BOOTSTRAP_REPS, "bootstrap_seed": RANDOM_SEED,
+            "latency_p25_ms": float(successful.quantile(.25)) if len(values) else np.nan,
+            "latency_p50_ms": float(successful.quantile(.50)) if len(values) else np.nan,
+            "latency_p75_ms": float(successful.quantile(.75)) if len(values) else np.nan,
+            "latency_p95_ms": float(successful.quantile(.95)) if len(values) else np.nan,
+            "latency_p99_ms": float(successful.quantile(.99)) if len(values) else np.nan,
+            "bootstrap_reps": bootstrap_reps, "bootstrap_seed": seed,
             "bootstrap_method": "IID percentile; 2.5th and 97.5th percentiles",
-            "bootstrap_time_dependence_caveat": "Ordered runs may be autocorrelated; IID CI may understate uncertainty",
+            "bootstrap_time_dependence_caveat": "Ordered requests may be autocorrelated; IID CI may understate uncertainty",
         }
         for key, interval in ci.items():
             row[f"latency_{key}_ci95_low_ms"] = interval[0] if interval else np.nan
             row[f"latency_{key}_ci95_high_ms"] = interval[1] if interval else np.nan
         rows.append(row)
+
+    for variant, group in data.groupby("variant", dropna=False, sort=True):
+        if "rps" in group and group["rps"].notna().any():
+            for rps, load_group in group.loc[group["rps"].notna()].groupby(
+                "rps", sort=True
+            ):
+                append_group(variant, rps, load_group)
+        append_group(variant, "pooled", group, pooled=True)
+
+    by_variant = {name: group.loc[group["status"].eq("ok") & group["latency_ms"].notna(), "latency_ms"].astype(float).to_numpy()
+                  for name, group in data.groupby("variant", dropna=False, sort=True)}
+    if "baseline_naive" in by_variant and "proposed_vectorized" in by_variant:
+        if "pair_id" not in data:
+            raise ValueError("paired implementation comparison requires pair_id")
+        paired_rows = data.loc[
+            data["variant"].isin(["baseline_naive", "proposed_vectorized"])
+            & data["status"].eq("ok")
+            & data["latency_ms"].notna()
+        ]
+        if paired_rows.duplicated(["pair_id", "variant"]).any():
+            raise ValueError("paired comparison contains duplicate pair_id/variant rows")
+        paired = paired_rows.pivot(
+            index="pair_id", columns="variant", values="latency_ms"
+        )
+        if {"baseline_naive", "proposed_vectorized"}.issubset(paired.columns):
+            paired = paired.dropna(subset=["baseline_naive", "proposed_vectorized"])
+        if len(paired):
+            baseline = paired["baseline_naive"].to_numpy(dtype=float)
+            proposed = paired["proposed_vectorized"].to_numpy(dtype=float)
+            rng = np.random.default_rng(seed)
+            draws = rng.integers(0, len(paired), size=(bootstrap_reps, len(paired)))
+            b_draw = baseline[draws].mean(axis=1)
+            p_draw = proposed[draws].mean(axis=1)
+            ratios = b_draw / np.maximum(p_draw, np.finfo(float).tiny)
+            low, high = np.quantile(ratios, [.025, .975])
+            for row in rows:
+                if row["variant"] == "proposed_vectorized" and row["rps"] == "pooled":
+                    row["speedup_vs_baseline"] = float(
+                        baseline.mean() / proposed.mean()
+                    )
+                    row["speedup_ci95_low"] = float(low)
+                    row["speedup_ci95_high"] = float(high)
     return pd.DataFrame(rows)
 
 
-def process_file(input_path: Path = DEFAULT_INPUT, output_dir: Path = DEFAULT_OUTPUT) -> tuple[pd.DataFrame, pd.DataFrame, dict[str, Any]]:
+def load_load_test(path: Path) -> tuple[pd.DataFrame, dict[str, Any]]:
+    """Load the tracked open-loop load-test measurements and sidecar provenance."""
+    if not path.is_file():
+        raise FileNotFoundError(f"Tracked load-test measurements do not exist: {path}")
+    frame = pd.read_csv(path)
+    required = {"phase", "idx", "t_utc", "rps", "latency_ms", "status", "run_id"}
+    missing = sorted(required - set(frame.columns))
+    if missing:
+        raise ValueError(f"{path.name}: load-test CSV missing columns: {missing}")
+    frame = frame.loc[frame["phase"].eq("measure")].copy()
+    frame["latency_ms"] = pd.to_numeric(frame["latency_ms"], errors="coerce")
+    frame["rps"] = pd.to_numeric(frame["rps"], errors="raise")
+    frame["variant"] = "load_test"
+    if "error_type" not in frame:
+        frame["error_type"] = None
+    if "error_msg" not in frame:
+        frame["error_msg"] = None
+    if "pair_id" not in frame:
+        frame["pair_id"] = pd.NA
+
+    sidecar = path.with_suffix(".meta.json")
+    metadata = json.loads(sidecar.read_text(encoding="utf-8")) if sidecar.exists() else {}
+    return frame, metadata
+
+
+def _error_mask(frame: pd.DataFrame) -> pd.Series:
+    errors = ~frame["status"].eq("ok")
+    for field in ("error_type", "error_msg"):
+        if field in frame:
+            errors |= frame[field].notna() & frame[field].astype(str).ne("")
+    return errors
+
+
+def process_file(input_path: Path = DEFAULT_INPUT, output_dir: Path = DEFAULT_OUTPUT,
+                 bootstrap_reps: int = BOOTSTRAP_REPS, seed: int = RANDOM_SEED,
+                 load_input: Path | None = None,
+                 max_error_rate_pct: float = 1.0) -> tuple[pd.DataFrame, pd.DataFrame, dict[str, Any]]:
     records, parse_report = load_jsonl(input_path)
     runs, schema_issues = validate_records(records)
     metadata = next((record for record in records if record.get("type") == "meta"), {})
@@ -175,10 +268,24 @@ def process_file(input_path: Path = DEFAULT_INPUT, output_dir: Path = DEFAULT_OU
         schema_issues.append({"line": int(row["_source_line"]), "reason": "negative_latency"})
     measured.loc[negative, "latency_ms"] = np.nan
     measured, outlier_report = flag_latency_outliers(measured)
-    summary = aggregate(measured) if not measured.empty else pd.DataFrame()
+    comparison_summary = aggregate(measured, bootstrap_reps, seed) if not measured.empty else pd.DataFrame()
+    load_measurements = pd.DataFrame()
+    load_summary = pd.DataFrame()
+    load_metadata: dict[str, Any] = {}
+    if load_input is not None:
+        load_measurements, load_metadata = load_load_test(load_input)
+        load_summary = aggregate(load_measurements, bootstrap_reps, seed)
+    summary_parts = [part for part in (comparison_summary, load_summary) if not part.empty]
+    summary = pd.concat(summary_parts, ignore_index=True) if summary_parts else pd.DataFrame()
     phase_counts = runs["phase"].value_counts().to_dict()
+    measured_errors = _error_mask(measured)
+    error_rate_pct = (
+        float(measured_errors.mean() * 100) if len(measured) else None
+    )
+    if not 0 <= max_error_rate_pct <= 100:
+        raise ValueError("max_error_rate_pct must be between 0 and 100")
     report = {
-        "input": str(input_path), "n_lines": parse_report["n_lines"],
+        "input": input_path.name, "n_lines": parse_report["n_lines"],
         "n_parsed_objects": parse_report["n_parsed_objects"], "parse_issues": parse_report["issues"],
         "n_parse_errors": len(parse_report["issues"]), "n_run_records_validated": int(len(runs)),
         "n_warmup": int(len(warmups)), "n_measure_before_validation": int(len(measured)),
@@ -186,16 +293,40 @@ def process_file(input_path: Path = DEFAULT_INPUT, output_dir: Path = DEFAULT_OU
         "unknown_phases": unknown_phases, "schema_issues": schema_issues,
         "n_schema_issues": len(schema_issues),
         "n_missing_latency_measure": int(measured["latency_ms"].isna().sum()),
-        "n_failed_measure_requests": int((~measured["status"].eq("ok")).sum()),
+        "n_failed_measure_requests": int(measured_errors.sum()),
+        "error_rate_pct": error_rate_pct,
+        "max_error_rate_pct": max_error_rate_pct,
+        "error_guardrail_passed": (
+            error_rate_pct is not None and error_rate_pct <= max_error_rate_pct
+        ),
+        "bootstrap_reps": bootstrap_reps, "bootstrap_seed": seed,
+        "environment": metadata.get("environment_label", metadata.get("os", {}).get("platform")),
+        "environment_metadata": {key: metadata.get(key) for key in ("cpu", "ram", "container", "python")},
+        "comparison": metadata.get("comparison"),
+        "load_test_source": None if load_input is None else load_input.name,
+        "load_test_environment": {
+            key: load_metadata.get(key) for key in ("os", "cpu", "ram", "python")
+        },
+        "n_load_test_requests": int(len(load_measurements)),
+        "n_load_test_errors": int(
+            _error_mask(load_measurements).sum()
+        ) if not load_measurements.empty else 0,
+        "load_test_error_rate_pct": (
+            float(_error_mask(load_measurements).mean() * 100)
+            if not load_measurements.empty
+            else None
+        ),
         "error_denominator": "all valid phase=measure run records, including records without latency",
-        "error_definition": "status != 'ok' or non-empty error_type/error_msg",
+        "error_definition": "status != 'ok' or non-empty error_type/error_msg; latency summaries use successful observations only",
         "outliers": outlier_report,
-        "unsupported_metrics": ["throughput: no request count/time interval field", "load: not recorded", "system variant: not recorded"],
+        "unsupported_metrics": ["throughput: wall-clock request rate is the offered-load variable"],
     }
     if not runs["phase"].eq("warmup").any():
         LOGGER.warning("No warm-up records were found.")
     output_dir.mkdir(parents=True, exist_ok=True)
     summary.to_csv(output_dir / "metrics_summary.csv", index=False)
+    if not load_summary.empty:
+        load_summary.to_csv(output_dir / "load_test_summary.csv", index=False)
     measured.to_csv(output_dir / "measurements.csv", index=False)
     (output_dir / "quality_report.json").write_text(json.dumps(report, indent=2), encoding="utf-8")
     LOGGER.info("Read %d objects; parse issues=%d, warm-up=%d, measure=%d, execution errors=%d, IQR flags=%d",
@@ -209,8 +340,22 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--input", type=Path, default=DEFAULT_INPUT)
     parser.add_argument("--output-dir", type=Path, default=DEFAULT_OUTPUT)
+    parser.add_argument("--load-input", type=Path, default=DEFAULT_LOAD_INPUT)
+    parser.add_argument("--config", type=Path, default=ROOT / "configs/config.yaml")
     args = parser.parse_args()
-    process_file(args.input, args.output_dir)
+    try:
+        import yaml
+        config = yaml.safe_load(args.config.read_text(encoding="utf-8")) or {}
+    except FileNotFoundError:
+        LOGGER.warning("Config not found; using built-in bootstrap defaults")
+        config = {}
+    statistics_cfg = config.get("statistics", {})
+    quality_cfg = config.get("quality", {})
+    process_file(args.input, args.output_dir,
+                 bootstrap_reps=int(statistics_cfg.get("bootstrap_reps", BOOTSTRAP_REPS)),
+                 seed=int(statistics_cfg.get("bootstrap_seed", config.get("benchmark", {}).get("seed", RANDOM_SEED))),
+                 load_input=args.load_input,
+                 max_error_rate_pct=float(quality_cfg.get("max_error_rate_pct", 1.0)))
 
 
 if __name__ == "__main__":

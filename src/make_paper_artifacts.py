@@ -98,17 +98,22 @@ def make_figures(df: pd.DataFrame, out_dir: Path) -> tuple[Path, Path]:
         widths=0.45,
         showmeans=False,
         showfliers=False,
-        medianprops=dict(color="#b2182b", linewidth=1.5),
-        boxprops=dict(facecolor="#e0f3f8", edgecolor="#2b83ba", linewidth=1.0, alpha=0.7),
-        whiskerprops=dict(color="#2b83ba", linewidth=1.0),
-        capprops=dict(color="#2b83ba", linewidth=1.0),
+        medianprops=dict(color="black", linewidth=1.5),
+        boxprops=dict(facecolor="#e0f3f8", edgecolor="#0072B2", linewidth=1.0, alpha=0.7),
+        whiskerprops=dict(color="#0072B2", linewidth=1.0),
+        capprops=dict(color="#0072B2", linewidth=1.0),
     )
+    colorblind_boxes = ["#0072B2", "#E69F00", "#009E73"]
+    for patch, color in zip(bp["boxes"], colorblind_boxes):
+        patch.set_facecolor(color)
+        patch.set_alpha(0.28)
 
     # Overlaid jittered points
     rng = np.random.default_rng(42)
     for i, vals in enumerate(group_data):
         jitter = rng.uniform(-0.12, 0.12, size=len(vals))
-        ax1.scatter(np.full_like(vals, i + 1) + jitter, vals, color="#2b83ba", alpha=0.45, s=12, edgecolors="none")
+        ax1.scatter(np.full_like(vals, i + 1) + jitter, vals, color=colorblind_boxes[i],
+                    marker=["o", "s", "^"][i], alpha=0.55, s=15, edgecolors="none")
 
     ax1.set_title("(a) Dependence Markers ($F_i$) by Duration Group", loc="left", fontweight="bold")
     ax1.set_ylabel("Markers per 1,000 words ($F_i$)")
@@ -119,7 +124,8 @@ def make_figures(df: pd.DataFrame, out_dir: Path) -> tuple[Path, Path]:
 
     # ── Panel (b): RQ3 Scatter of Duration vs Isolation Index ──
     sub = df.dropna(subset=["duration_months", "isolation_per_1000"]).copy()
-    ax2.scatter(sub["duration_months"], sub["isolation_per_1000"], color="#238b45", alpha=0.55, s=14, edgecolors="none")
+    ax2.scatter(sub["duration_months"], sub["isolation_per_1000"], color="#0072B2", marker="o",
+                alpha=0.55, s=14, edgecolors="none", label="Synthetic observations")
 
     # Linear trendline with 95% bootstrap confidence band
     x_vals = sub["duration_months"].values
@@ -129,7 +135,7 @@ def make_figures(df: pd.DataFrame, out_dir: Path) -> tuple[Path, Path]:
     # OLS fit
     slope, intercept = np.polyfit(x_vals, y_vals, 1)
     y_pred = slope * x_grid + intercept
-    ax2.plot(x_grid, y_pred, color="#cb181d", linewidth=1.4, label="OLS Trend")
+    ax2.plot(x_grid, y_pred, color="#E69F00", linestyle="--", linewidth=1.7, label="OLS trend")
 
     # Bootstrap band for regression line
     boot_preds = []
@@ -139,7 +145,7 @@ def make_figures(df: pd.DataFrame, out_dir: Path) -> tuple[Path, Path]:
         boot_preds.append(bs_slope * x_grid + bs_int)
     ci_lower = np.percentile(boot_preds, 2.5, axis=0)
     ci_upper = np.percentile(boot_preds, 97.5, axis=0)
-    ax2.fill_between(x_grid, ci_lower, ci_upper, color="#cb181d", alpha=0.15, label="95% CI")
+    ax2.fill_between(x_grid, ci_lower, ci_upper, color="#E69F00", alpha=0.18, label="95% bootstrap CI")
 
     ax2.set_title("(b) Duration vs Isolation–Avoidance Index ($I_i$)", loc="left", fontweight="bold")
     ax2.set_xlabel("Reported Duration (months)")
@@ -602,10 +608,12 @@ def validate_cross_references(base_dir: Path = ROOT) -> dict[str, Any]:
 def main():
     parser = argparse.ArgumentParser(description="Generate Part A publication artifacts.")
     parser.add_argument("--root", default=str(ROOT), help="Repository root path")
+    parser.add_argument("--output-dir", default=None, help="Artifact root (defaults to --root)")
     args = parser.parse_args()
 
     base_dir = Path(args.root)
-    reports_dir = base_dir / "reports"
+    output_dir = Path(args.output_dir) if args.output_dir else base_dir
+    reports_dir = output_dir / "reports"
     figures_dir = reports_dir / "figures/study"
 
     logger.info("Loading analysis tables and datasets...")
@@ -624,7 +632,7 @@ def main():
     make_markdown_section_4(data_dict, reports_dir / "paper_section_4.md")
 
     logger.info("Validating cross-references...")
-    val_res = validate_cross_references(base_dir)
+    val_res = validate_cross_references(output_dir)
     if not val_res["is_valid"]:
         raise ValueError(f"Cross-reference validation failed: {val_res['missing_labels']}")
 

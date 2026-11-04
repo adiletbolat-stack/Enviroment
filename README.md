@@ -2,7 +2,7 @@
 
 [![License: MIT](https://img.shields.io/badge/code-MIT-green.svg)](LICENSE)
 [![License: CC BY 4.0](https://img.shields.io/badge/data%20%26%20codebook-CC%20BY%204.0-lightgrey.svg)](LICENSE-DATA)
-[![Python 3.11.9](https://img.shields.io/badge/python-3.11.9-blue.svg)](https://www.python.org/)
+[![Python 3.11+](https://img.shields.io/badge/python-3.11%2B-blue.svg)](https://www.python.org/)
 [![Docker](https://img.shields.io/badge/environment-Docker-2496ED.svg)](Dockerfile)
 [![Status](https://img.shields.io/badge/status-research%20proposal-orange.svg)](docs/preregistration.md)
 
@@ -47,27 +47,33 @@ All hypothesis tests use significance level $\alpha = 0.05$. All study parameter
 │   ├── study.yaml              # Methodology parameters, column mapping, marker lists, filters
 │   └── config.yaml             # Benchmarking harness parameters and SLO thresholds
 ├── data/
+│   ├── raw/test_run.jsonl      # TRACKED: canonical synthetic benchmark log; other raw files ignored
 │   ├── sample/                 # TRACKED IN GIT: minimal sample for Quickstart
 │   │   ├── sample.csv          # 10-row dataset sample demonstrating filters
-│   │   └── test_run.jsonl      # Test benchmark run log (>=100 runs, microsecond timestamps)
+│   │   └── test_run.jsonl      # Byte-identical copy of the canonical log
 │   ├── synthetic/              # Local synthetic test dataset (main_dataset.csv, untracked)
 │   ├── interim/                # Cleaned analysis-ready dataset (analysis_set.csv)
-│   └── processed/              # Benchmark processed tables and quality summaries
+│   └── processed/              # Benchmark measurements, summaries, and load-test provenance
 ├── notebooks/
-│   └── 01_data_analysis.ipynb  # Interactive walkthrough and visualization
+│   └── 01_data_analysis.ipynb  # Executed Task 3 walkthrough and visualization
 ├── src/
 │   ├── load_dataset.py         # Ingestion, schema validation, per-1,000 recomputation, filtering
 │   ├── collect.py              # Backward-compatible wrapper for load_dataset
 │   ├── stats.py                # Hypothesis tests (RQ2, RQ3, Cliff's delta CI, Jonckheere-Terpstra)
 │   ├── metrics.py              # Text metric helpers and author pooling logic
 │   ├── benchmark.py            # Microsecond-accurate I/O-isolated benchmarking harness
+│   ├── benchmark_comparison.py  # Paired row-wise versus vectorized Task 3 comparison
+│   ├── process_data.py         # Warm-up filtering, statistics, bootstrap CIs, and guardrails
+│   ├── visualize.py            # Publication-ready load and distribution figures
 │   ├── bench_rq2.py            # RQ2 benchmarking target adapter
 │   └── env_metadata.py         # Hardware/OS/package environment metadata collector
 ├── scripts/
-│   └── run_all.sh              # Single-command pipeline execution (tests -> prep -> stats -> bench)
+│   ├── run_all.sh              # Sample pipeline; prefers the local .venv interpreter
+│   └── verify_task3_summary.py # Independent JSONL-to-summary percentile check
 ├── tests/
 │   ├── test_metrics.py         # Unit tests for text tokenization and author-level pooling
-│   └── test_pipeline.py        # Unit tests for per-1,000 formulas, schema checks, and filters
+│   ├── test_pipeline.py        # Unit tests for per-1,000 formulas, schema checks, and filters
+│   └── test_task3.py           # Paired benchmark, guardrail, summary, notebook, and figure checks
 ├── results/
 │   ├── tables/                 # Output tables with synthetic data warnings
 │   └── figures/                # Output publication figures with synthetic watermarks
@@ -82,52 +88,40 @@ All hypothesis tests use significance level $\alpha = 0.05$. All study parameter
 |---|---|
 | **Architecture** | CPU only (x86_64 or ARM64 / Apple Silicon). **No GPU or CUDA required.** |
 | **RAM** | Minimum 2 GB (4 GB recommended). |
-| **Disk Space** | Approximately 1.2 GB for the container image or Conda environment. |
+| **Disk Space** | Approximately 1.2 GB for the Python environment. |
 | **Operating System**| Linux (Ubuntu/Debian), macOS (12+), or Windows 10/11 (WSL2/PowerShell). |
-| **Software** | Docker 24+ **or** Python 3.11+ / Conda 23+. |
+| **Software** | Python 3.11+ and the pinned packages in `requirements.txt`. |
 
 ---
 
 ## 4. Quickstart and Reproducibility Guide
 
-The entire analytical pipeline can be reproduced in **2–3 commands** using the bundled sample data in `data/sample/sample.csv`.
+The sample pipeline and Task 3 analysis can be run locally without Docker. In Windows PowerShell:
 
-### Option A: Using Docker (Recommended)
-
-```bash
-# 1. Clone the repository
-git clone https://github.com/adiletbolat-stack/Enviroment.git && cd Enviroment
-
-# 2. Build the lightweight CPU container
-docker build -t ai-companion-markers .
-
-# 3. Execute the full end-to-end pipeline on sample data
-docker run --rm -v "$(pwd)":/workspace ai-companion-markers bash scripts/run_all.sh --sample
-```
-
-To run interactive JupyterLab (port 8888, non-root user `researcher`):
-```bash
-docker run --rm -p 8888:8888 -v "$(pwd)":/workspace ai-companion-markers
-```
-*(Open the generated token link displayed in the terminal).*
-
-> **Docker Environment Status:** The `Dockerfile` has been fully rewritten, pinned to `python:3.11.9-slim-bookworm`, verified against syntax standards, and hardened to run as an unprivileged user without root privileges. In host environments where the Docker Desktop daemon is not active, use Option B below.
-
-### Option B: Local Python Virtual Environment
-
-```bash
-# 1. Create and activate a clean Python 3.11 virtual environment
+```powershell
+# 1. Create a local environment
 python -m venv .venv
-source .venv/bin/activate       # On Windows PowerShell: .\.venv\Scripts\Activate.ps1
 
-# 2. Install exact pinned dependencies
-pip install -r requirements.txt
+# 2. Install dependencies through that environment
+.\.venv\Scripts\python.exe -m pip install -r requirements.txt
 
-# 3. Run the full pipeline on sample data
+# 3. Run tests and rebuild summaries and figures from the tracked canonical log
+.\.venv\Scripts\python.exe -m pytest -q
+.\.venv\Scripts\python.exe src\process_data.py --config configs\config.yaml
+.\.venv\Scripts\python.exe src\visualize.py
+.\.venv\Scripts\python.exe scripts\verify_task3_summary.py
+.\.venv\Scripts\python.exe -m jupyter nbconvert --to notebook --execute --inplace notebooks\01_data_analysis.ipynb
+```
+
+To collect an additional paired run without replacing the tracked canonical log, pass a unique output path, for example `.\.venv\Scripts\python.exe src\benchmark_comparison.py --config configs\config.yaml --output data\raw\additional_run.jsonl`.
+
+To run the sample wrapper, use Git Bash (or another Bash shell) from the repository root:
+
+```bash
 bash scripts/run_all.sh --sample
 ```
 
-*(To process the full dataset, run `bash scripts/run_all.sh` without the `--sample` flag).*
+The wrapper prefers `.venv` and writes only to ignored sample-output directories. The canonical benchmark command refuses to overwrite an existing log; remove or archive that specific file before intentionally collecting a replacement.
 
 ---
 
@@ -155,11 +149,14 @@ The dataset provided in `data/synthetic/main_dataset.csv` (and excerpted in `dat
 
 ## 6. Benchmarking and Engineering Evaluation
 
-As a separate engineering objective distinct from the behavioral study, this repository implements a production-grade benchmarking harness ([`src/benchmark.py`](src/benchmark.py) and [`src/bench_rq2.py`](src/bench_rq2.py)) to audit the latency, jitter, and computational complexity of the RQ2 analysis step.
+As a separate engineering objective—not part of the behavioral study—the Task 3 harness in [`src/benchmark_comparison.py`](src/benchmark_comparison.py) compares the existing row-wise `metrics.author_level` implementation with a pandas groupby implementation. Both receive the same 1,848-row synthetic input, 80 warm-up calls and 120 paired measured calls per implementation; execution order alternates within pairs. The fixed seed is 42.
 
-- **Warm-up phase:** Adaptive warm-up discarding cold-start iterations until coefficient of variation (CV) and window drift stabilize (`warmup_converged=True`, 80 iterations).
-- **I/O Isolation:** Zero logging, zero print statements, and disabled garbage collection (`gc.disable()`) during the measured timing loop.
-- **Output:** Structured JSONL logging with microsecond UTC timestamps (`%Y-%m-%dT%H:%M:%S.%fZ`), monotonic offset, error isolation, and p50/p95/p99 latency calculations. A verified log of 202 lines (80 warm-up + 120 measured calls, 0 errors, median 3.50 ms, p95 4.88 ms, p99 5.21 ms) is tracked in [`data/sample/test_run.jsonl`](data/sample/test_run.jsonl).
+- **Canonical source:** [`data/raw/test_run.jsonl`](data/raw/test_run.jsonl) is the tracked JSONL source of the paired comparison. `data/sample/test_run.jsonl` is byte-identical. Other files in `data/raw/` remain ignored.
+- **Processing:** [`src/process_data.py`](src/process_data.py) filters by the logged `phase`, retains failed calls for the error-rate guardrail, computes median/p25/p75, mean ± SD, p95/p99 and percentile-bootstrap intervals, and writes the processed CSVs.
+- **Load-test source:** the separate tracked open-loop run is [`data/processed/measurements_load.csv`](data/processed/measurements_load.csv), with environment sidecar [`data/processed/measurements_load.meta.json`](data/processed/measurements_load.meta.json). Its derived summary is `data/processed/load_test_summary.csv`.
+- **Environment for the paired comparison:** Windows 11 (build 10.0.26200), CPython 3.12.4, Intel Core i5-9300H @ 2.40 GHz (4 physical / 8 logical cores), 17.01 GB RAM. These fields are recorded in the canonical log metadata.
+- **Load-test environment:** the separate load-test run used Windows 10, CPython 3.13.0 and Intel Core i5-10300H @ 2.50 GHz; RAM was not captured. Do not combine the two experiments as if they shared one machine.
+- **Timing scope:** the paired comparison times only the aggregation functions; input generation, equivalence checks, logging and file I/O are outside the timed interval. Cyclic garbage collection is disabled during both phases.
 
 ---
 
@@ -193,42 +190,28 @@ If you use this codebase or methodology, please cite:
 
 ## Results & Discussion
 
-The performance evaluation was conducted using the reproducible benchmarking pipeline. Warm-up measurements were excluded from the final statistical analysis.
+The results below are an **engineering comparison on synthetic input**, not a research result about people. Warm-up calls are excluded by their logged `phase`; the two implementations were measured in one run on the same input and environment. Table values are generated from `data/processed/metrics_summary.csv` and checked by `tests/test_task3.py`.
 
-### Benchmark Summary
+### Baseline vs Proposed Method
 
-| Metric | Observed Result |
-|---|---:|
-| Successful requests | 120 |
-| Failed requests | 0 |
-| Error rate | 0% |
-| Mean latency | 3.388 ms |
-| Standard deviation | 0.943 ms |
-| Median latency (p50) | 3.185 ms |
-| p95 latency | 4.789 ms |
-| p99 latency | 5.847 ms |
-| Bootstrap repetitions | 2,000 |
-| Random seed | 42 |
+| Implementation | n measured | Errors (rate) | Median (p25–p75), ms | Median 95% CI, ms | Mean ± SD, ms | p95 (95% CI), ms | p99 (95% CI), ms | Speedup (paired 95% CI) |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|
+| Baseline (naive row-wise) | 120 | 0 (0.0%) | 1.980 (1.537–2.625) | [1.800, 2.292] | 2.275 ± 0.942 | 4.329 [3.724, 4.994] | 5.128 [4.346, 5.228] | reference |
+| Proposed (vectorized) | 120 | 0 (0.0%) | 27.360 (25.381–33.576) | [26.602, 28.726] | 30.787 ± 7.519 | 46.142 [40.714, 50.247] | 56.049 [46.620, 58.741] | 0.074× [0.069, 0.079] |
 
-The benchmark produced a median latency of 3.185 ms, while the 95th and 99th percentile latencies were 4.789 ms and 5.847 ms, respectively.
+Speedup is defined as baseline mean latency divided by proposed mean latency; values below 1 indicate a slowdown. For this 1,848-row workload, constructing and grouping the pandas frame made the proposed implementation about 13.5× slower. This is a pipeline-engineering observation, not evidence about human subjects or a general claim about pandas.
 
-The 95% bootstrap confidence intervals were computed using the percentile method. The observations were treated as independent; therefore, temporal dependence may lead to underestimated uncertainty.
+The percentile-bootstrap intervals use 2,000 resamples and seed 42. The speedup interval resamples paired request IDs. As with all ordered benchmark data, the IID percentile intervals do not model all temporal dependence.
 
-A matched baseline-versus-proposed comparison was not available. Consequently, no speedup factor is reported.
+### Load test and visualizations
 
-### Scientific Visualizations
+Figure 1 uses the separate tracked open-loop load-test file, not the paired comparison. It contains 7,125 requests across 10, 20, 30, 40, 50, 75, 100 and 150 RPS; 2 failed requests give a 0.028% error rate, below the configured 1% guardrail. Its data and environment are separately recorded, and its values are not pooled with the paired benchmark.
 
-**Figure 1. Latency versus load**
+![Latency Plot](reports/figures/fig1_latency_vs_load.png)
 
-![Latency versus load](reports/figures/fig1_latency_vs_load.png)
+![Distribution Plot](reports/figures/fig2_distribution_boxplot.png)
 
-**Figure 2. Latency distribution**
-
-![Latency distribution](reports/figures/fig2_distribution_boxplot.png)
-
-Both figures are available in PNG and vector PDF formats in `reports/figures/`.
-
-The load-testing experiment and the 120-request distribution benchmark are separate experiments and are not combined into a single statistical sample.
+Both figures have vector PDF and PNG exports in `reports/figures/`. The PNGs are saved at 300 DPI and their pixel-density metadata is rounded up to at least 300 DPI. Figure 1 shows p50/p95/p99 with 95% bootstrap bands; Figure 2 shows the two implementations and the bootstrap 95% CI for each median.
 
 ### Domain Model
 
@@ -240,16 +223,10 @@ See [Domain Model and STRIDE Analysis](docs/domain_model.md).
 
 ### Reproducibility
 
-The analysis can be reproduced using the Jupyter Notebook:
-
-`notebooks/01_data_analysis.ipynb`
-
-The notebook contains data ingestion, warm-up filtering, statistical aggregation, and visualization steps.
-
-The random seed is fixed to 42 for reproducibility.
+Restart and run [`notebooks/01_data_analysis.ipynb`](notebooks/01_data_analysis.ipynb) from the repository root, or run the commands in Quickstart. The independent percentile check is `.\.venv\Scripts\python.exe scripts\verify_task3_summary.py`. Bootstrap repetitions and seed are configured in `configs/config.yaml`.
 
 ### Research Limitations
 
 The research-question analyses rely on synthetic data and serve to validate the reproducibility of the pipeline. They do not constitute empirical findings about real students or AI-companion users.
 
-The benchmark results describe the tested local environment and should not be generalized to other hardware or production systems without additional measurements.
+The paired comparison was captured on one Windows 11 / CPython 3.12.4 / Intel i5-9300H machine with 17.01 GB RAM. The load-test data came from a separate Windows 10 / CPython 3.13.0 / Intel i5-10300H run whose RAM metadata is unavailable. Neither result should be generalized to other hardware or production systems without additional measurements.

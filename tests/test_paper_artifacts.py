@@ -6,6 +6,7 @@ All numbers are derived from CSV files, never hardcoded.
 
 import subprocess
 import sys
+import tempfile
 from pathlib import Path
 
 import pandas as pd
@@ -161,10 +162,9 @@ class TestTablesContent:
         pytest.skip("No q75/p75 column found in RQ2 summary CSV")
 
     def test_mw_u_statistic_matches_csv(self):
-        """Mann-Whitney U in tables.tex must match synthetic_rq2_mwu.csv."""
-        csv = RESULTS / "synthetic_rq2_mwu.csv"
-        if not csv.exists():
-            pytest.skip(f"CSV not found: {csv}")
+        """Mann-Whitney U in tables.tex must match the generated RQ2 tests table."""
+        csv = RESULTS / "synthetic_rq2_tests.csv"
+        assert csv.exists(), f"Expected generated test table not found: {csv}"
         df = pd.read_csv(csv, comment="#")
         # Find U-statistic column
         for col in ("U_statistic", "U", "statistic"):
@@ -286,12 +286,13 @@ class TestCrossReferences:
 class TestScriptReproducibility:
     def test_script_runs_cleanly(self):
         """Running python src/make_paper_artifacts.py must exit 0."""
-        result = subprocess.run(
-            [sys.executable, "src/make_paper_artifacts.py"],
-            capture_output=True,
-            text=True,
-            cwd=ROOT,
-        )
+        with tempfile.TemporaryDirectory(prefix="paper-artifacts-") as output_dir:
+            result = subprocess.run(
+                [sys.executable, "src/make_paper_artifacts.py", "--output-dir", output_dir],
+                capture_output=True,
+                text=True,
+                cwd=ROOT,
+            )
         assert result.returncode == 0, (
             f"make_paper_artifacts.py exited with code {result.returncode}\n"
             f"STDOUT:\n{result.stdout}\n"
@@ -300,12 +301,13 @@ class TestScriptReproducibility:
 
     def test_script_output_mentions_all_artifacts(self):
         """Script stdout must mention each expected output file."""
-        result = subprocess.run(
-            [sys.executable, "src/make_paper_artifacts.py"],
-            capture_output=True,
-            text=True,
-            cwd=ROOT,
-        )
+        with tempfile.TemporaryDirectory(prefix="paper-artifacts-") as output_dir:
+            result = subprocess.run(
+                [sys.executable, "src/make_paper_artifacts.py", "--output-dir", output_dir],
+                capture_output=True,
+                text=True,
+                cwd=ROOT,
+            )
         combined = result.stdout + result.stderr
         for keyword in ("formulas.tex", "tables.tex", "paper_section_4", "study_results"):
             assert keyword in combined, \
