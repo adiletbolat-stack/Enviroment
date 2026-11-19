@@ -1,0 +1,132 @@
+
+\documentclass[11pt,a4paper]{article}
+
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{booktabs}
+\usepackage{graphicx}
+\usepackage{geometry}
+\geometry{margin=2.5cm}
+
+\title{Mathematical Formulation and Metrics}
+\author{Enviroment Research Project}
+\date{}
+
+\begin{document}
+
+\maketitle
+
+\section{Performance Metrics}
+
+\subsection{Latency}
+
+Latency is defined as the execution time
+of an individual operation:
+
+\begin{equation}
+L_i =
+\underbrace{t_{\mathrm{end},i}}_{\text{End time}}
+-
+\underbrace{t_{\mathrm{start},i}}_{\text{Start time}}
+\label{eq:latency}
+\end{equation}
+
+The mean latency is:
+
+\begin{equation}
+\overline{L} =
+\frac{1}{n}\sum_{i=1}^{n}L_i
+\label{eq:mean_latency}
+\end{equation}
+
+\subsection{Tail Latency}
+
+The 95th and 99th percentiles are:
+
+\begin{align}
+p_{95} &= Q_{0.95}(\mathbf{L}),\\
+p_{99} &= Q_{0.99}(\mathbf{L}).
+\end{align}
+
+\subsection{Throughput}
+
+Throughput is the number of completed
+operations per unit time:
+
+\begin{equation}
+R = \frac{N}{T}
+\end{equation}
+
+\subsection{Bootstrap Confidence Interval}
+
+A percentile bootstrap confidence interval is:
+
+\begin{equation}
+CI_{95\%} =
+\left[
+Q_{0.025}(\hat{\theta}^{*}),
+Q_{0.975}(\hat{\theta}^{*})
+\right]
+\label{eq:bootstrap_ci}
+\end{equation}
+
+\subsection{Relative Speedup}
+
+The speedup ratio is defined as:
+
+\begin{equation}
+S =
+\frac{\overline{L}_{\mathrm{baseline}}}
+     {\overline{L}_{\mathrm{proposed}}}
+\label{eq:speedup}
+\end{equation}
+
+For the evaluated synthetic workload:
+
+\begin{equation}
+S = \frac{2.275}{30.787}
+\approx 0.0739
+\end{equation}
+
+Since $S < 1$, the proposed implementation
+is slower than the baseline.
+
+\section{Notation Table}
+
+\begin{table}[htbp]
+\centering
+\caption{Mathematical Notation}
+\label{tab:notation}
+\begin{tabular}{llll}
+\toprule
+Symbol & Type & Description & Unit \\
+\midrule
+$L_i$ & Scalar & Latency of run $i$ & ms \\
+$n$ & Scalar & Measured runs & count \\
+$\overline{L}$ & Scalar & Mean latency & ms \\
+$S$ & Scalar & Speedup ratio & -- \\
+$R$ & Scalar & Throughput & ops/s \\
+$\mathbf{L}$ & Vector & Latency values & ms \\
+$\mathbf{X}$ & Matrix & Input data & varies \\
+$\mathcal{D}$ & Set & Dataset & -- \\
+$\mathcal{I}$ & Set & Run indices & -- \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\section{Experimental Notes}
+
+Warm-up executions are excluded from
+performance measurements.
+
+The comparison uses 120 measured runs
+per implementation on a synthetic
+dataset of 1,848 rows.
+
+Bootstrap uncertainty estimates use
+2,000 resamples with random seed 42.
+\clearpage
+\input{tables.tex}
+\end{document}
