@@ -33,8 +33,15 @@ markers. For social-avoidance counts $a_{ij}$, the corresponding index is
        {\displaystyle\sum_{j=1}^{J_i}w_{ij}}.
   \label{eq:isolation-index}
 \end{equation}
-Equations~\ref{eq:dependence-rate} and~\ref{eq:isolation-index} define the
-planned author-level rates; the marker composition is specified in
+
+Equations~\eqref{eq:dependence-rate}
+and~\eqref{eq:isolation-index} define the
+planned author-level rates; the marker
+composition is specified in
+\texttt{configs/study.yaml} and remains
+subject to confirmation before analysis
+of authentic data.
+ the marker composition is specified in
 \texttt{configs/study.yaml} and remains subject to confirmation before
 analysis of authentic data.
 
@@ -43,9 +50,16 @@ analysis of authentic data.
 
 The planned workflow is summarized in Fig.~\ref{fig:workflow}. The repository
 configuration specifies a minimum post length of 100 words and other quality
-filters. A second coder is planned for a random 10--20\% subsample, with
-Cohen's $\kappa\geq 0.60$ as the reliability target; disagreements require
-codebook review. For RQ2, the primary contrast is a one-sided Mann--Whitney
+filters. 
+A second coder is planned for a random
+10--20\% subsample, with Cohen's
+$\kappa\geq 0.60$ as a preliminary
+reliability target. Coding agreement will
+be evaluated following established
+content-analysis reliability principles~
+\cite{krippendorffReliability2004}.
+Disagreements will prompt codebook review.
+ For RQ2, the primary contrast is a one-sided Mann--Whitney
 $U$ test between the less-than-one-month and more-than-three-month groups,
 with Cliff's $\delta$ and a bootstrap 95\% confidence interval. Kruskal--
 Wallis and Jonckheere--Terpstra tests are specified for secondary group and
@@ -58,6 +72,7 @@ model controlling for weekly session frequency:
 \end{equation}
 The study is cross-sectional and observational, so results will be
 interpreted as associations only.
+
 
 \begin{figure}[t]
   \centering
