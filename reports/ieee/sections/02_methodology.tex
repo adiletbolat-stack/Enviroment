@@ -17,8 +17,9 @@ must not be carried over as an empirical sampling fact.
 \label{subsec:measures}
 
 For author $i$, let $w_{ij}$ be the word count for post $j$ and let
-$m_{ij}^{(k)}$ be the coded count for dependence marker $k$. The planned
-emotional-dependence rate per 1,000 words is
+$m_{ij}^{(k)}$ be the coded count for dependence marker $k$. Equation~
+\ref{eq:dependence-rate} defines the planned emotional-dependence rate per
+1,000 words:
 \begin{equation}
   F_i = 1000\,
   \frac{\displaystyle\sum_{j=1}^{J_i}\sum_{k\in\mathcal{K}_F}m_{ij}^{(k)}}
@@ -27,6 +28,7 @@ emotional-dependence rate per 1,000 words is
 \end{equation}
 where $\mathcal{K}_F$ contains attachment, fear-of-loss, and daily-support
 markers. For social-avoidance counts $a_{ij}$, the corresponding index is
+defined in Equation~\ref{eq:isolation-index}:
 \begin{equation}
   I_i = 1000\,
   \frac{\displaystyle\sum_{j=1}^{J_i}a_{ij}}
@@ -36,14 +38,11 @@ markers. For social-avoidance counts $a_{ij}$, the corresponding index is
 
 Equations~\eqref{eq:dependence-rate}
 and~\eqref{eq:isolation-index} define the
-planned author-level rates; the marker
+planned author-level rates. The marker
 composition is specified in
 \texttt{configs/study.yaml} and remains
 subject to confirmation before analysis
 of authentic data.
- the marker composition is specified in
-\texttt{configs/study.yaml} and remains subject to confirmation before
-analysis of authentic data.
 
 \subsection{Collection, coding, and analysis workflow}
 \label{subsec:workflow}
@@ -59,12 +58,13 @@ be evaluated following established
 content-analysis reliability principles~
 \cite{krippendorffReliability2004}.
 Disagreements will prompt codebook review.
- For RQ2, the primary contrast is a one-sided Mann--Whitney
+For RQ2, the primary contrast is a one-sided Mann--Whitney
 $U$ test between the less-than-one-month and more-than-three-month groups,
 with Cliff's $\delta$ and a bootstrap 95\% confidence interval. Kruskal--
 Wallis and Jonckheere--Terpstra tests are specified for secondary group and
 trend analyses. For RQ3, the plan uses Spearman rank correlation and an OLS
-model controlling for weekly session frequency:
+model controlling for weekly session frequency, specified in
+Equation~\ref{eq:rq3-model}:
 \begin{equation}
   I_i = \beta_0 + \beta_1\,\mathrm{duration}_i
       + \beta_2\,\mathrm{sessions}_i + \varepsilon_i.
