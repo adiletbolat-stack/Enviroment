@@ -37,12 +37,17 @@ long-duration group ($>3$ months).
 Figure~\ref{fig:rq2-boxplot} displays the synthetic
 author-level distributions behind this comparison.
 
+
 \begin{figure}[t]
-\centering
-\includegraphics[width=\columnwidth,trim=0 3.00in 0 0.17in,clip]{figures/study_results.png}
-\caption{Synthetic emotional-dependence marker rates by reported duration.}
-\label{fig:rq2-boxplot}
+  \centering
+  \includegraphics[width=\columnwidth]
+    {figures/rq2_boxplot.png}
+  \caption{Synthetic emotional-dependence marker
+  rates by engagement duration.
+  Pipeline validation only.}
+  \label{fig:rq2-boxplot}
 \end{figure}
+
 
 The one-sided Mann--Whitney $U$ test comparing the
 long-duration and short-duration groups yielded
@@ -71,7 +76,7 @@ the social-avoidance index was $\rho=0.082$
 ($p=0.144$, one-sided).
 
 In the OLS model specified in
-Eq.~\ref{eq:rq3-model}, controlling for weekly
+Eq.~\eqref{eq:rq3-model}, controlling for weekly
 session frequency, the duration coefficient was
 $\beta_1=-0.129$ ($p=0.645$), while the
 session-frequency coefficient was
@@ -80,6 +85,30 @@ $\beta_2=-0.619$ ($p=0.278$).
 The model explained approximately 0.8\% of the
 variation in the synthetic outcome
 ($R^2=0.008$).
+
+Table~\ref{tab:baseline-comparison} compares
+the unadjusted correlation baseline with the
+covariate-adjusted analysis on the same
+synthetic observations. The coefficients
+represent different estimands and are not
+directly comparable.
+
+\begin{table}[t]
+\centering
+\caption{Synthetic RQ3 Baseline Comparison}
+\label{tab:baseline-comparison}
+\begin{tabular}{lcc}
+\toprule
+Metric & Spearman & Adjusted OLS \\
+\midrule
+Duration effect & $\rho=0.136$ & $\beta=-0.129$ \\
+$p$-value & 0.038 & 0.645 \\
+Controls sessions & No & Yes \\
+Observations & 171 & 171 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
 
 Thus, the weak positive unadjusted correlation
 was not reflected in a statistically significant
